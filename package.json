@@ -1,0 +1,26 @@
+{
+  "devDependencies": {
+    "ts-node": "^10.7.0",
+    "typescript": "^4.6.4"
+  },
+  "name": "stocks-thing",
+  "version": "1.0.0",
+  "main": "stocks.js",
+  "dependencies": {
+    "arg": "^4.1.3",
+    "acorn": "^8.7.1",
+    "create-require": "^1.1.1",
+    "acorn-walk": "^8.2.0",
+    "yn": "^3.1.1",
+    "make-error": "^1.3.6",
+    "v8-compile-cache-lib": "^3.0.1",
+    "diff": "^4.0.2"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "npx ts-node stocks.ts"
+  },
+  "author": "",
+  "license": "ISC",
+  "description": ""
+}
