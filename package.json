@@ -8,6 +8,7 @@
   "version": "1.0.0",
   "main": "stocks.js",
   "dependencies": {
+    "@types/node-fetch": "^2.6.1",
     "acorn": "^8.7.1",
     "acorn-walk": "^8.2.0",
     "arg": "^4.1.3",
@@ -15,6 +16,7 @@
     "create-require": "^1.1.1",
     "diff": "^4.0.2",
     "make-error": "^1.3.6",
+    "node-fetch": "2",
     "v8-compile-cache-lib": "^3.0.1",
     "yn": "^3.1.1"
   },
