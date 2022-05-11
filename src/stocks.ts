@@ -3,155 +3,77 @@ import { join } from 'path'
 import os from 'os'
 import {
   Earnings,
-  EarningsGrowths,
+  EarningsMetric,
   Report,
   ReportResp,
   Tag,
+  TagsKey,
   TagsObject,
   TickerInfo,
 } from './utils/types'
 import cliProgress from 'cli-progress'
 import {
+  getCachedEarnings,
   getCompanyReport,
   getCompanyTickers,
+  getEarnings,
   getEarningsCalendar,
+  getEarningsObject,
+  hasCache,
+  setCachedEarnings,
 } from './utils/dataFetch'
-import { errorsCache } from './utils/utils'
+import {
+  errorsCache,
+  getChunks,
+  mapTrim,
+  normalize,
+  objArrToObj,
+  trimObject,
+  trimReports,
+} from './utils/utils'
 import { config } from './utils/config'
-
+import { getAllScores, getGrowths, normalizeValues } from './utils/process'
 const fsPromise = fs.promises
 
-const parse = async (fileName: string) => {
-  const contents = await fsPromise.readFile(fileName)
-
-  return await JSON.parse(contents.toString())
-}
-
-const getTags = async (fileName: string) => {
-  const data = (await parse(join(fileName))) as ReportResp
-
-  return (data.facts?.['us-gaap'] as TagsObject) ?? undefined
-}
-
-const main = async () => {
-  const base = join(os.homedir() + '/Downloads/companyfacts')
-  const files = await fsPromise.readdir(base)
-  const map: Record<string, any> = {}
-  const bar1 = new cliProgress.SingleBar({}, cliProgress.Presets.shades_classic)
-  bar1.start(files.length, 0)
-  let i = 0
-  for (const file of files) {
-    const tags = await getTags(join(base, '/', file))
-    if (tags) {
-      map[file] = tags.Assets?.label
-      bar1.update(i)
-      i++
-      break
-    }
-  }
-  bar1.stop()
-  console.log('Values: ', Object.keys(map).length)
-}
-
-const calcPercentGrowth = (prev: Report, curr: Report) => {
-  if (!prev || !curr) {
-    return 0
-  }
-  return ((curr.val - prev.val) / ((curr.val + prev.val) / 2)) * 100
-}
-
-const trimReports = (reports: Report[]) => {
-  return unique(reports, 'filed').sort(
-    (a, b) => new Date(a.filed).getTime() + new Date(b.filed).getTime()
-  )
-}
-
-const unique = (reports: Report[], value: keyof Report) => [
-  ...new Map(reports.map((item) => [item[value], item])).values(),
-]
-
-const getChunks = (a: unknown[], size: number) =>
-  Array.from(new Array(Math.ceil(a.length / size)), (_, i) =>
-    a.slice(i * size, i * size + size)
-  )
-
-const getGrowths = (earnings: Earnings[]) => {
-  const growths = earnings.map((earning) => {
-    const values = Object.entries(earning.tags)
-      .filter(([_, value]: [string, Tag]) =>
-        Object.keys(value.units).includes('USD')
-      )
-      .map(([key, value]: [string, Tag]) => {
-        const trimmed = trimReports(value.units.USD)
-        return {
-          key: key as keyof TagsObject,
-          value: calcPercentGrowth(trimmed[1], trimmed[0]),
-        }
-      })
-
-    const newGrowths = {} as Record<keyof TagsObject, number>
-    values.forEach((x) => {
-      newGrowths[x.key] = x.value
-    })
-    return { ticker: earning.ticker, growths: newGrowths } as EarningsGrowths
-  })
-  return growths as EarningsGrowths[]
-}
-
-const timeout = (time: number) =>
-  new Promise((resolve, reject) => {
-    setTimeout(() => {
-      resolve(null)
-    }, time)
-  })
-
 const apiMain = async () => {
-  const bar1 = new cliProgress.SingleBar({}, cliProgress.Presets.shades_classic)
   try {
-    const earnings = await getEarningsCalendar('2022-05-10')
-    const allTickers = Object.values(await getCompanyTickers())
-    const tickers = earnings.data.rows
-      .map((earning) =>
-        allTickers.find(
-          (x) =>
-            x.ticker === earning.symbol ||
-            x.title.toLowerCase() === earning.name.trim().toLowerCase()
-        )
-      )
-      .filter((x) => x)
-
-    let i = 0
-    const reports = [] as Earnings[]
-    const chunks = getChunks(
-      tickers,
-      config.earningsChunkSize
-    ) as TickerInfo[][]
-    bar1.start(chunks.length, 0)
-    for await (const chunk of chunks) {
-      const chunkReports = await Promise.allSettled(
-        chunk.map(async (x) => {
-          const ticker = x!.cik_str.toString()
-          const tags = (await getCompanyReport(ticker))?.facts['us-gaap']
-          return tags ? ({ tags: tags, ticker } as Earnings) : undefined
-        })
-      )
-      chunkReports.forEach((report) => {
-        if (report.status === 'fulfilled' && report.value) {
-          reports.push(report.value)
-        }
-      })
-      await timeout(1000)
-      i++
-      bar1.update(i)
+    let reports: Earnings[]
+    if (config.useCache && hasCache(config.filePath)) {
+      reports = await getCachedEarnings(config.filePath)
+      console.log('Cache Loaded')
+    } else {
+      reports = (await getEarningsObject()) as Earnings[]
+      console.log('Fetched')
+      await setCachedEarnings(config.filePath, reports)
+      console.log('Saved To Cache')
     }
-    bar1.stop()
     const growths = getGrowths(reports)
     console.log('')
-
-    console.log('Growths Count', growths.length)
-    console.log('First', growths[0])
+    const normalized = normalizeValues(growths)
+    const scores = getAllScores(normalized)
+      .sort((a, b) => b.score - a.score)
+      .map((x) => ({ ...x, score: x.score * 100 }))
+    const combined = {
+      ...scores.map((x) => {
+        const growthObj = trimObject(
+          growths.find((g) => g.ticker === x.ticker)?.metrics!
+        )
+        const growthShort = Object.entries(growthObj).map(([key, value]) => ({
+          key: key.slice(0, 3),
+          value: value.toFixed(2),
+        }))
+        return {
+          ...x,
+          ...objArrToObj(growthShort),
+        }
+      }),
+    }
+    console.log('')
+    console.log('Scores')
+    console.table(combined)
   } catch (e) {
-    bar1.stop()
+    console.log('')
+    console.log('Something went wrong')
     errorsCache.push(e)
   } finally {
     console.log('')

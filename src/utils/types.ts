@@ -1,3 +1,6 @@
+import { config } from 'mathjs'
+import { Weights } from './config'
+
 export interface ReportResp {
   cik: number
   facts: {
@@ -5,31 +8,23 @@ export interface ReportResp {
   }
 }
 
-export interface TagsObject {
-  AssetsCurrent: Tag
-  Assets: Tag
-  Cash: Tag
-  Liabilities: Tag
-  LiabilitiesCurrent: Tag
-  NetCashProvidedByUsedInFinancingActivities: Tag
-  NetCashProvidedByUsedInInvestingActivities: Tag
-  NetCashProvidedByUsedInOperatingActivities: Tag
-  NetIncomeLoss: Tag
-  ProfitLoss: Tag
-  CostOfRevenue: Tag
-  RevenueFromContractWithCustomerExcludingAssessedTax: Tag
+export type TagsObject = Record<keyof Weights, Tag>
 
-  //.....
-}
+export type TagsKey = Extract<keyof TagsObject, string>
 
 export interface Earnings {
   ticker: string
   tags: TagsObject
 }
 
-export interface EarningsGrowths {
+export interface EarningsMetric {
   ticker: string
-  growths: Record<keyof TagsObject, number>
+  metrics: Record<TagsKey, number>
+}
+
+export interface EarningsScore {
+  ticker: string
+  score: number
 }
 
 export interface Tag {
@@ -74,3 +69,5 @@ export interface TickerInfo {
   ticker: string
   title: string
 }
+
+export type Defined<T> = Exclude<T, undefined>
