@@ -4,3 +4,7 @@ const weights = {
   Assets: 3,
   Cash: 1,
 } as Record<keyof TagsObject, number>
+
+export const config = {
+  earningsChunkSize: 11,
+}

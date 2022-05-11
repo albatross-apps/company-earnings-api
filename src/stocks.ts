@@ -17,6 +17,7 @@ import {
   getEarningsCalendar,
 } from './utils/dataFetch'
 import { errorsCache } from './utils/utils'
+import { config } from './utils/config'
 
 const fsPromise = fs.promises
 
@@ -121,7 +122,10 @@ const apiMain = async () => {
 
     let i = 0
     const reports = [] as Earnings[]
-    const chunks = getChunks(tickers, 8) as TickerInfo[][]
+    const chunks = getChunks(
+      tickers,
+      config.earningsChunkSize
+    ) as TickerInfo[][]
     bar1.start(chunks.length, 0)
     for await (const chunk of chunks) {
       const chunkReports = await Promise.allSettled(

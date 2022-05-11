@@ -27,7 +27,7 @@ export interface Earnings {
   tags: TagsObject
 }
 
-export interface TagGrowths {
+export interface EarningsGrowths {
   ticker: string
   growths: Record<keyof TagsObject, number>
 }
