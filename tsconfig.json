@@ -12,6 +12,7 @@
     }
   },
   "compilerOptions": {
-    "lib": ["DOM"]
+    "lib": ["DOM"],
+    "target": "es2017"
   }
 }

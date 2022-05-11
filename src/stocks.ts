@@ -2,10 +2,11 @@ import fs from 'fs'
 import { join } from 'path'
 import os from 'os'
 import {
+  Earnings,
+  EarningsGrowths,
   Report,
   ReportResp,
   Tag,
-  TagGrowths,
   TagsObject,
   TickerInfo,
 } from './utils/types'
@@ -15,6 +16,7 @@ import {
   getCompanyTickers,
   getEarningsCalendar,
 } from './utils/dataFetch'
+import { errorsCache } from './utils/utils'
 
 const fsPromise = fs.promises
 
@@ -40,8 +42,6 @@ const main = async () => {
   for (const file of files) {
     const tags = await getTags(join(base, '/', file))
     if (tags) {
-      console.log({ tags })
-
       map[file] = tags.Assets?.label
       bar1.update(i)
       i++
@@ -53,7 +53,6 @@ const main = async () => {
 }
 
 const calcPercentGrowth = (prev: Report, curr: Report) => {
-  console.log({ curr, prev })
   if (!prev || !curr) {
     return 0
   }
@@ -70,13 +69,14 @@ const unique = (reports: Report[], value: keyof Report) => [
   ...new Map(reports.map((item) => [item[value], item])).values(),
 ]
 
-function chunkMaxLength(arr: unknown[], chunkSize: number, maxLength: number) {
-  return Array.from({ length: maxLength }, () => arr.splice(0, chunkSize))
-}
+const getChunks = (a: unknown[], size: number) =>
+  Array.from(new Array(Math.ceil(a.length / size)), (_, i) =>
+    a.slice(i * size, i * size + size)
+  )
 
-const getGrowths = (fullReports: TagsObject[]) => {
-  const growths = fullReports.map((tagObject) => {
-    const values = Object.entries(tagObject)
+const getGrowths = (earnings: Earnings[]) => {
+  const growths = earnings.map((earning) => {
+    const values = Object.entries(earning.tags)
       .filter(([_, value]: [string, Tag]) =>
         Object.keys(value.units).includes('USD')
       )
@@ -88,11 +88,13 @@ const getGrowths = (fullReports: TagsObject[]) => {
         }
       })
 
-    const newGrowths = {} as TagGrowths
+    const newGrowths = {} as Record<keyof TagsObject, number>
     values.forEach((x) => {
       newGrowths[x.key] = x.value
     })
+    return { ticker: earning.ticker, growths: newGrowths } as EarningsGrowths
   })
+  return growths as EarningsGrowths[]
 }
 
 const timeout = (time: number) =>
@@ -103,6 +105,7 @@ const timeout = (time: number) =>
   })
 
 const apiMain = async () => {
+  const bar1 = new cliProgress.SingleBar({}, cliProgress.Presets.shades_classic)
   try {
     const earnings = await getEarningsCalendar('2022-05-10')
     const allTickers = Object.values(await getCompanyTickers())
@@ -117,40 +120,41 @@ const apiMain = async () => {
       .filter((x) => x)
 
     let i = 0
-    const reports = [] as TagsObject[]
-    const bar1 = new cliProgress.SingleBar(
-      {},
-      cliProgress.Presets.shades_classic
-    )
-    bar1.start(tickers.length, 0)
-    const chunks = chunkMaxLength(tickers, 8, 8) as TickerInfo[][]
+    const reports = [] as Earnings[]
+    const chunks = getChunks(tickers, 8) as TickerInfo[][]
+    bar1.start(chunks.length, 0)
     for await (const chunk of chunks) {
       const chunkReports = await Promise.allSettled(
-        chunk.map(
-          async (x) =>
-            (
-              await getCompanyReport(x!.cik_str.toString())
-            )?.facts['us-gaap']
-        )
+        chunk.map(async (x) => {
+          const ticker = x!.cik_str.toString()
+          const tags = (await getCompanyReport(ticker))?.facts['us-gaap']
+          return tags ? ({ tags: tags, ticker } as Earnings) : undefined
+        })
       )
       chunkReports.forEach((report) => {
-        // @ts-ignore
-        if (report.value as TagsObject) {
-          // @ts-ignore
-          console.log(report.value.Asset?.USD?.[0])
-          // @ts-ignore
+        if (report.status === 'fulfilled' && report.value) {
           reports.push(report.value)
         }
       })
       await timeout(1000)
-      bar1.update(i)
       i++
+      bar1.update(i)
     }
     bar1.stop()
     const growths = getGrowths(reports)
-    console.log(growths)
+    console.log('')
+
+    console.log('Growths Count', growths.length)
+    console.log('First', growths[0])
   } catch (e) {
-    console.log(e)
+    bar1.stop()
+    errorsCache.push(e)
+  } finally {
+    console.log('')
+    console.log('Finished!')
+    console.log('Errors:')
+    console.log('')
+    console.log(errorsCache ?? 'None')
   }
 }
 

@@ -1,5 +1,6 @@
 import { CalendarEarnings, ReportResp, TickerInfo } from './types'
 import fetch from 'node-fetch'
+import { errorsCache } from './utils'
 
 /**
  * Sick
@@ -50,7 +51,7 @@ export const getCompanyReport = async (cik: string) => {
 
     return (await report.json()) as ReportResp
   } catch (e) {
-    console.log({ e })
+    errorsCache.push(e)
     return undefined
   }
 }

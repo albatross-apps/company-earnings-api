@@ -22,7 +22,15 @@ export interface TagsObject {
   //.....
 }
 
-export type TagGrowths = Record<keyof TagsObject, number>
+export interface Earnings {
+  ticker: string
+  tags: TagsObject
+}
+
+export interface TagGrowths {
+  ticker: string
+  growths: Record<keyof TagsObject, number>
+}
 
 export interface Tag {
   label: string
