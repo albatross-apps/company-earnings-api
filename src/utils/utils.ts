@@ -1,9 +1,12 @@
 import { config } from './config'
-import { Defined, Report, TagsKey } from './types'
+import { Defined, Report, TagsKey, TagsObject } from './types'
 //@ts-ignore
 import CC from 'currency-converter-lt'
+import { number, re } from 'mathjs'
 
 export const errorsCache = [] as unknown[]
+
+export const growthValues = [] as unknown[]
 
 export const mapTrim = <T extends unknown, TR extends unknown>(
   arr: T[],
@@ -43,10 +46,10 @@ export const timeout = (time: number) =>
   })
 
 export const calcPercentGrowth = (prev: Report, curr: Report) => {
-  if (!prev || !curr) {
+  if (!prev.val || !curr.val) {
     return 0
   }
-  return ((curr.val - prev.val) / ((curr.val + prev.val) / 2)) * 100
+  return ((prev.val - curr.val) / prev.val) * 100
 }
 
 export const trimObject = <T extends unknown>(obj: Record<TagsKey, T>) => {
@@ -80,4 +83,34 @@ export const convertCurrencies = (currencies: { [key: string]: Report[] }) => {
   })
 
   return newCurrencies
+}
+
+export const growthSecret = (key: string, reports: Report[]) => {
+  //console.log({ key, trimmed })
+  if (!reports.length)
+    return {
+      key: key as keyof TagsObject,
+      value: 0,
+    }
+  const sum = reports.reduce(
+    (prev, curr) => {
+      if (prev.rep && calcPercentGrowth(prev.rep, curr) === Infinity)
+        console.log({ p: prev.rep, c: curr })
+
+      return {
+        score: prev.rep
+          ? calcPercentGrowth(prev.rep, curr) + prev.score
+          : prev.score,
+        rep: curr,
+      }
+    },
+    { score: 0, rep: undefined as Report | undefined }
+  )
+  //console.log(sum.score)
+  const avg = sum.score / reports.length
+
+  return {
+    key: key as keyof TagsObject,
+    value: avg,
+  }
 }

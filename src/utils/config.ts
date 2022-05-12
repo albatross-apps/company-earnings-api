@@ -30,5 +30,5 @@ export const config = {
   waitTime: 1000,
   date: '2022-05-11',
   weights,
-  quaters: 4,
+  quaters: 1,
 }
