@@ -1,39 +1,14 @@
 import fs from 'fs'
-import { join } from 'path'
-import os from 'os'
-import {
-  Earnings,
-  EarningsMetric,
-  Report,
-  ReportResp,
-  Tag,
-  TagsKey,
-  TagsObject,
-  TickerInfo,
-} from './utils/types'
-import cliProgress from 'cli-progress'
+import { Earnings } from './utils/types'
 import {
   getCachedEarnings,
-  getCompanyReport,
-  getCompanyTickers,
-  getEarnings,
-  getEarningsCalendar,
   getEarningsObject,
   hasCache,
   setCachedEarnings,
 } from './utils/dataFetch'
-import {
-  errorsCache,
-  getChunks,
-  mapTrim,
-  normalize,
-  objArrToObj,
-  trimObject,
-  trimReports,
-} from './utils/utils'
+import { errorsCache, objArrToObj, trimObject } from './utils/utils'
 import { config } from './utils/config'
 import { getAllScores, getGrowths, normalizeValues } from './utils/process'
-const fsPromise = fs.promises
 
 const apiMain = async () => {
   try {
@@ -53,17 +28,19 @@ const apiMain = async () => {
     const scores = getAllScores(normalized)
       .sort((a, b) => b.score - a.score)
       .map((x) => ({ ...x, score: x.score * 100 }))
+    //console.log(growths.map((g) => trimObject(g.metrics)))
+    //console.log(scores)
     const combined = {
       ...scores.map((x) => {
-        const growthObj = trimObject(
-          growths.find((g) => g.ticker === x.ticker)?.metrics!
-        )
+        const growthObj = growths.find((g) => g.ticker === x.ticker)?.metrics!
+
         const growthShort = Object.entries(growthObj).map(([key, value]) => ({
-          key: key.slice(0, 3),
-          value: value.toFixed(2),
+          key: key.replace(/[a-z]/g, ''),
+          value: Number(value.toFixed(0)),
         }))
         return {
-          ...x,
+          ticker: x.ticker,
+          score: Number(x.score.toFixed(0)),
           ...objArrToObj(growthShort),
         }
       }),

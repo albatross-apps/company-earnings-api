@@ -2,8 +2,11 @@ const weights = {
   NetCashProvidedByUsedInOperatingActivities: 12,
   // (Net Income)
   Revenues: 2,
+  RevenueFromContractWithCustomerIncludingAssessedTax: 2,
   ProfitLoss: 8,
+  NetIncomeLoss: 8,
   StockholdersEquity: 5,
+  CashAndCashEquivalentsAtCarryingValue: 2,
   Cash: 2,
   PaymentsToAcquireProductiveAssets: -10,
   PaymentsToAcquirePropertyPlantAndEquipment: -8,
@@ -25,5 +28,7 @@ export const config = {
   filePath: './cache.json',
   earningsChunkSize: 11,
   waitTime: 1000,
+  date: '2022-05-11',
   weights,
+  quaters: 4,
 }

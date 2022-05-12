@@ -98,7 +98,7 @@ export const getEarnings = async (
 export const getEarningsObject = async () => {
   const bar1 = new cliProgress.SingleBar({}, cliProgress.Presets.shades_classic)
   try {
-    const earnings = await getEarningsCalendar('2022-05-10')
+    const earnings = await getEarningsCalendar(config.date)
     const allTickers = Object.values(await getCompanyTickers())
     const tickers = mapTrim(earnings.data.rows, (earning) =>
       allTickers.find(

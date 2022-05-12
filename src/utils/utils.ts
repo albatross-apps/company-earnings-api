@@ -1,5 +1,7 @@
 import { config } from './config'
 import { Defined, Report, TagsKey } from './types'
+//@ts-ignore
+import CC from 'currency-converter-lt'
 
 export const errorsCache = [] as unknown[]
 
@@ -28,8 +30,8 @@ export const getChunks = (a: unknown[], size: number) =>
   )
 
 export const trimReports = (reports: Report[]) => {
-  return unique(reports, 'filed').sort(
-    (a, b) => new Date(a.filed).getTime() + new Date(b.filed).getTime()
+  return reports.sort(
+    (a, b) => new Date(b.end).getTime() - new Date(a.end).getTime()
   )
 }
 
@@ -68,4 +70,14 @@ export const objArrToObj = <T extends string, TV extends unknown>(
     result[item.key] = item.value
   })
   return result
+}
+
+export const convertCurrencies = (currencies: { [key: string]: Report[] }) => {
+  const newCurrencies = {} as Record<string, Report[]>
+  Object.keys(currencies).forEach((key) => {
+    const currencyConverter = new CC({ from: key, to: 'USD', amount: 100 })
+    newCurrencies[key] = currencyConverter
+  })
+
+  return newCurrencies
 }

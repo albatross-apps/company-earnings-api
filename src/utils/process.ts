@@ -39,26 +39,55 @@ export const normalizeValues = (earnings: EarningsMetric[]) => {
 
 export const getGrowths = (earnings: Earnings[]) => {
   const growths = earnings.map((earning) => {
-    const values = Object.entries(earning.tags)
-      .filter(([_, value]: [string, Tag]) =>
-        Object.keys(value.units).includes('USD')
-      )
-      .map(([key, value]: [string, Tag]) => {
+    const growthValues = []
+    const values = Object.entries(trimObject(earning.tags)).map(
+      ([key, value]: [string, Tag]) => {
+        if (!value || !Object.keys(value.units).includes('USD')) {
+          //console.log('here', key)
+          return {
+            key: key as keyof TagsObject,
+            value: 0,
+          }
+        }
         const trimmed = trimReports(value.units.USD)
-        console.log({ trimmed })
+        //console.log({ key, trimmed })
 
-        const currYear = trimmed[0]
-        const prevYear = trimmed.find((x) => {
-          return x.fp === currYear.fp && currYear.fy - 1 === x.fy
+        const currYear = trimmed.findIndex((x) => x.filed === config.date)
+        if (currYear === -1) {
+          //console.log('no currYear')
+          return {
+            key: key as keyof TagsObject,
+            value: 0,
+          }
+        }
+        const prevYear = trimmed[currYear + config.quaters]
+        if (!prevYear) {
+          //console.log('no prevYear')
+          return {
+            key: key as keyof TagsObject,
+            value: 0,
+          }
+        }
+
+        growthValues.push({
+          key,
+          currfile: trimmed[currYear].end,
+          currVal: trimmed[currYear].val,
+          prevfile: prevYear.end,
+          prevVal: prevYear.val,
         })
-        console.log(prevYear, currYear)
-
         return {
           key: key as keyof TagsObject,
-          value: calcPercentGrowth(prevYear!, currYear),
+          value: calcPercentGrowth(prevYear!, trimmed[currYear]),
         }
-      })
+      }
+    )
 
+    if (growthValues.length) {
+      console.log(earning.ticker)
+      //@ts-ignore
+      console.table(growthValues)
+    }
     const newGrowths = {} as Record<keyof TagsObject, number>
     values.forEach((x) => {
       newGrowths[x.key] = x.value
