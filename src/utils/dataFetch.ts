@@ -1,25 +1,20 @@
-import {
-  CalendarEarnings,
-  Earnings,
-  EarningsMetric,
-  ReportResp,
-  TickerInfo,
-} from './types'
+import { CalendarEarnings, Earnings, ReportResp, TickerInfo } from './types'
 import fetch from 'node-fetch'
 import { errorsCache, getChunks, mapTrim, timeout } from './utils'
-import { config } from './config'
-import cliProgress from 'cli-progress'
-import fs from 'fs'
-const fsPromise = fs.promises
 
 /**
- * Sick
+ * By passing in a date this function will use the nasdaq API
+ * to get all of the companies who are filing earnings on that date.
+ *
+ * @param earningsDate
+ * @returns list of companies
  */
+
 export const getEarningsCalendar = async (
-  date: string
+  earningsDate: string
 ): Promise<CalendarEarnings> => {
   const earningsResponse = await fetch(
-    `https://api.nasdaq.com/api/calendar/earnings?date=${date}`,
+    `https://api.nasdaq.com/api/calendar/earnings?date=${earningsDate}`,
     {
       method: 'GET',
       headers: {
@@ -34,14 +29,25 @@ export const getEarningsCalendar = async (
 }
 
 /**
- * This is awesome
+ * Uses the SEC EDGAR api to get a list of all company tickers with
+ * their cik number.
+ *
+ * @returns a list of all company tickers w/ cik number
  */
+
 export const getCompanyTickers = async (): Promise<{
   [key: string]: TickerInfo
 }> => {
   const tickers = await fetch('https://www.sec.gov/files/company_tickers.json')
   return tickers.json()
 }
+
+/**
+ * Gets a company's earnings report by cik number using the SEC EDGAR api.
+ *
+ * @param cik
+ * @returns an earning report for a company
+ */
 
 export const getCompanyReport = async (cik: string) => {
   try {
@@ -65,72 +71,3 @@ export const getCompanyReport = async (cik: string) => {
     return undefined
   }
 }
-
-export const getEarnings = async (
-  chunks: TickerInfo[][],
-  wait: number = 1000,
-  onChunkDone?: (i: number) => void
-) => {
-  let i = 0
-  const reports = [] as Earnings[]
-
-  for await (const chunk of chunks) {
-    const chunkReports = await Promise.allSettled(
-      chunk.map(async (x) => {
-        const cik = x!.cik_str.toString()
-        const ticker = x!.ticker
-        const tags = (await getCompanyReport(cik))?.facts['us-gaap']
-        return tags ? ({ tags: tags, ticker } as Earnings) : undefined
-      })
-    )
-    chunkReports.forEach((report) => {
-      if (report.status === 'fulfilled' && report.value) {
-        reports.push(report.value)
-      }
-    })
-    await timeout(wait)
-    i++
-    onChunkDone?.(i)
-  }
-  return reports
-}
-
-export const getEarningsObject = async () => {
-  const bar1 = new cliProgress.SingleBar({}, cliProgress.Presets.shades_classic)
-  try {
-    const earnings = await getEarningsCalendar(config.date)
-    const allTickers = Object.values(await getCompanyTickers())
-    const tickers = mapTrim(earnings.data.rows, (earning) =>
-      allTickers.find(
-        (x) =>
-          x.ticker === earning.symbol ||
-          x.title.toLowerCase() === earning.name.trim().toLowerCase()
-      )
-    )
-    const tickersToUse = [...tickers.slice(0)]
-    const chunks = getChunks(
-      tickersToUse,
-      config.earningsChunkSize
-    ) as TickerInfo[][]
-    bar1.start(chunks.length, 0)
-    const reports = await getEarnings(chunks, config.waitTime, (i) => {
-      bar1.update(i)
-    })
-    return reports
-  } catch (e) {
-    errorsCache.push(e)
-  } finally {
-    bar1.stop()
-  }
-}
-
-export const getCachedEarnings = async (fileName: string) => {
-  const content = await fsPromise.readFile(fileName)
-  return JSON.parse(content.toString())
-}
-
-export const setCachedEarnings = async (fileName: string, data: Earnings[]) => {
-  await fsPromise.writeFile(fileName, JSON.stringify(data))
-}
-
-export const hasCache = (fileName: string) => fs.existsSync(fileName)

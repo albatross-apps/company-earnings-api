@@ -1,14 +1,13 @@
 import { config } from './config'
-import { EarningsMetric, TagsKey, TagsObject, Earnings, Tag } from './types'
+import { EarningsMetric, TagsKey, TagsObject, Earnings, TagData } from './types'
 import {
-  calcPercentGrowth,
-  growthSecret,
-  growthValues,
+  calculateGrowthScorePerQuarter,
   mapTrim,
   normalize,
   sumFunc,
-  trimObject,
-  trimReports,
+  sortReportsByEndDate,
+  getWeightedTags,
+  objArrToObj,
 } from './utils'
 
 export const normalizeValues = (earnings: EarningsMetric[]) => {
@@ -39,34 +38,40 @@ export const normalizeValues = (earnings: EarningsMetric[]) => {
   })
 }
 
-export const getGrowths = (earnings: Earnings[]) => {
-  const growths = earnings.map((earning) => {
-    const values = Object.entries(trimObject(earning.tags)).map(
-      ([key, value]: [string, Tag]) => {
-        if (!value || !Object.keys(value.units).includes('USD')) {
-          //console.log('here', key)
+/**
+ * Takes a list of earnings and gets the weighted score taking
+ * all quarter growth into consideration.
+ *
+ * @param earnings
+ * @returns the score for every companies
+ */
+
+export const getCompaniesScoreEveryQuarter = (earnings: Earnings[]) => {
+  const allCompaniesScores = earnings.map((earning) => {
+    const earningScores = Object.entries(getWeightedTags(earning.tags)).map(
+      ([tag, data]: [string, TagData]) => {
+        if (
+          !data ||
+          !Object.keys(data.units).find((currency) =>
+            config.currencies.includes(currency)
+          )
+        ) {
           return {
-            key: key as keyof TagsObject,
+            key: tag as keyof TagsObject,
             value: 0,
           }
         }
-        const trimmed = trimReports(value.units.USD)
-        return growthSecret(key, trimmed)
+        const sortedReports = sortReportsByEndDate(data.units.USD)
+        return calculateGrowthScorePerQuarter(tag, sortedReports)
       }
     )
-
-    // if (growthValues.length) {
-    //   console.log(earning.ticker)
-    //   //@ts-ignore
-    //   console.table(growthValues)
-    // }
-    const newGrowths = {} as Record<keyof TagsObject, number>
-    values.forEach((x) => {
-      newGrowths[x.key] = x.value
-    })
-    return { ticker: earning.ticker, metrics: newGrowths } as EarningsMetric
+    const earningScoresMap = objArrToObj<string, number>(earningScores)
+    return {
+      ticker: earning.ticker,
+      metrics: earningScoresMap,
+    } as EarningsMetric
   })
-  return growths as EarningsMetric[]
+  return allCompaniesScores as EarningsMetric[]
 }
 
 export const getScore = (metics: Record<TagsKey, number>) =>

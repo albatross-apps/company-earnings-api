@@ -31,4 +31,5 @@ export const config = {
   date: '2022-05-11',
   weights,
   quaters: 1,
+  currencies: ['USD'],
 }

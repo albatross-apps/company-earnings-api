@@ -23,16 +23,12 @@ export const normalize = (
   return ((val - valMin) / (valMax - valMin)) * (max - min) + min
 }
 
-export const unique = (reports: Report[], value: keyof Report) => [
-  ...new Map(reports.map((item) => [item[value], item])).values(),
-]
-
 export const getChunks = (a: unknown[], size: number) =>
   Array.from(new Array(Math.ceil(a.length / size)), (_, i) =>
     a.slice(i * size, i * size + size)
   )
 
-export const trimReports = (reports: Report[]) => {
+export const sortReportsByEndDate = (reports: Report[]) => {
   return reports.sort(
     (a, b) => new Date(b.end).getTime() - new Date(a.end).getTime()
   )
@@ -52,15 +48,31 @@ export const calcPercentGrowth = (prev: Report, curr: Report) => {
   return ((prev.val - curr.val) / prev.val) * 100
 }
 
-export const trimObject = <T extends unknown>(obj: Record<TagsKey, T>) => {
-  const trimmedObj = {} as Record<TagsKey, T>
+/**
+ * Filters out all of the tags that are not weighted through the configuration
+ * file.
+ *
+ * @param companyTagsMap
+ * @returns all of the weighted tags
+ */
+export const getWeightedTags = <T extends unknown>(
+  companyTagsMap: Record<TagsKey, T>
+) => {
+  const weightedTags = {} as Record<TagsKey, T>
   Object.keys(config.weights).forEach((key) => {
-    trimmedObj[key as TagsKey] = obj[key as TagsKey]
+    weightedTags[key as TagsKey] = companyTagsMap[key as TagsKey]
   })
-  return trimmedObj
+  return weightedTags
 }
 
 export const sumFunc = <T extends number>(a: T, b: T) => a + b
+
+/**
+ * Takes an array of maps and converts it into a single map.
+ *
+ * @param arr
+ * @returns a map version of the array
+ */
 
 export const objArrToObj = <T extends string, TV extends unknown>(
   arr: {
@@ -85,32 +97,31 @@ export const convertCurrencies = (currencies: { [key: string]: Report[] }) => {
   return newCurrencies
 }
 
-export const growthSecret = (key: string, reports: Report[]) => {
-  //console.log({ key, trimmed })
+export const calculateGrowthScorePerQuarter = (
+  tag: string,
+  reports: Report[]
+) => {
   if (!reports.length)
     return {
-      key: key as keyof TagsObject,
+      key: tag as keyof TagsObject,
       value: 0,
     }
-  const sum = reports.reduce(
-    (prev, curr) => {
-      if (prev.rep && calcPercentGrowth(prev.rep, curr) === Infinity)
-        console.log({ p: prev.rep, c: curr })
-
+  const { score } = reports.reduce(
+    (previousReport, currentReport) => {
       return {
-        score: prev.rep
-          ? calcPercentGrowth(prev.rep, curr) + prev.score
-          : prev.score,
-        rep: curr,
+        score: previousReport.report
+          ? calcPercentGrowth(previousReport.report, currentReport) +
+            previousReport.score
+          : previousReport.score,
+        report: currentReport,
       }
     },
-    { score: 0, rep: undefined as Report | undefined }
+    { score: 0, report: undefined as Report | undefined }
   )
-  //console.log(sum.score)
-  const avg = sum.score / reports.length
+  const averageScorePerQuarter = score / reports.length
 
   return {
-    key: key as keyof TagsObject,
-    value: avg,
+    key: tag as keyof TagsObject,
+    value: averageScorePerQuarter,
   }
 }

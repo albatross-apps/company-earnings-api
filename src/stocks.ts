@@ -1,64 +1,78 @@
-import fs from 'fs'
-import { Earnings } from './utils/types'
-import {
-  getCachedEarnings,
-  getEarningsObject,
-  hasCache,
-  setCachedEarnings,
-} from './utils/dataFetch'
-import { errorsCache, objArrToObj, trimObject } from './utils/utils'
+import { Earnings, TickerInfo } from './utils/types'
+import { errorsCache, getChunks, mapTrim, timeout } from './utils/utils'
 import { config } from './utils/config'
-import { getAllScores, getGrowths, normalizeValues } from './utils/process'
+import cliProgress from 'cli-progress'
+import {
+  getCompanyReport,
+  getEarningsCalendar,
+  getCompanyTickers,
+} from './utils/dataFetch'
 
-const apiMain = async () => {
-  try {
-    let reports: Earnings[]
-    if (config.useCache && hasCache(config.filePath)) {
-      reports = await getCachedEarnings(config.filePath)
-      console.log('Cache Loaded')
-    } else {
-      reports = (await getEarningsObject()) as Earnings[]
-      console.log('Fetched')
-      await setCachedEarnings(config.filePath, reports)
-      console.log('Saved To Cache')
-    }
-    const growths = getGrowths(reports)
-    console.log('')
-    const normalized = normalizeValues(growths)
-    const scores = getAllScores(normalized)
-      .sort((a, b) => b.score - a.score)
-      .map((x) => ({ ...x, score: x.score * 100 }))
-    //console.log(growths.map((g) => trimObject(g.metrics)))
-    //console.log(scores)
-    const combined = {
-      ...scores.map((x) => {
-        const growthObj = growths.find((g) => g.ticker === x.ticker)?.metrics!
+const getCompaniesEarningsByChunks = async (
+  companyChunks: TickerInfo[][],
+  wait: number = 1000,
+  onChunkDone?: (i: number) => void
+) => {
+  let i = 0
+  const reports = [] as Earnings[]
 
-        const growthShort = Object.entries(growthObj).map(([key, value]) => ({
-          key: key.replace(/[a-z]/g, ''),
-          value: Number(value.toFixed(0)),
-        }))
-        return {
-          ticker: x.ticker,
-          score: Number(x.score.toFixed(0)),
-          ...objArrToObj(growthShort),
-        }
-      }),
-    }
-    console.log('')
-    console.log('Scores')
-    console.table(combined)
-  } catch (e) {
-    console.log('')
-    console.log('Something went wrong')
-    errorsCache.push(e)
-  } finally {
-    console.log('')
-    console.log('Finished!')
-    console.log('Errors:')
-    console.log('')
-    console.log(errorsCache ?? 'None')
+  for await (const companyChunk of companyChunks) {
+    const chunkReports = await Promise.allSettled(
+      companyChunk.map(async (x) => {
+        const cik = x!.cik_str.toString()
+        const ticker = x!.ticker
+        const tags = (await getCompanyReport(cik))?.facts['us-gaap']
+        return tags ? ({ tags: tags, ticker } as Earnings) : undefined
+      })
+    )
+    chunkReports.forEach((report) => {
+      if (report.status === 'fulfilled' && report.value) {
+        reports.push(report.value)
+      }
+    })
+    await timeout(wait)
+    i++
+    onChunkDone?.(i)
   }
+  return reports
 }
 
-apiMain()
+/**
+ * Gets all companies earning reports released on the date provided.
+ *
+ * @param date earnings report date
+ * @returns a list of company's earning reports
+ */
+
+export const getAllEarningReportsByDate = async (date: string) => {
+  const bar1 = new cliProgress.SingleBar({}, cliProgress.Presets.shades_classic)
+  try {
+    const earnings = await getEarningsCalendar(date)
+    const allTickers = Object.values(await getCompanyTickers())
+    const earningsTickers = mapTrim(earnings.data.rows, (earning) =>
+      allTickers.find(
+        (x) =>
+          x.ticker === earning.symbol ||
+          x.title.toLowerCase() === earning.name.trim().toLowerCase()
+      )
+    )
+    const tickersToUse = [...earningsTickers.slice(0)]
+    const earningsChunks = getChunks(
+      tickersToUse,
+      config.earningsChunkSize
+    ) as TickerInfo[][]
+    bar1.start(earningsChunks.length, 0)
+    const earningReports = await getCompaniesEarningsByChunks(
+      earningsChunks,
+      config.waitTime,
+      (i) => {
+        bar1.update(i)
+      }
+    )
+    return earningReports
+  } catch (e) {
+    errorsCache.push(e)
+  } finally {
+    bar1.stop()
+  }
+}

@@ -27,7 +27,7 @@ export interface EarningsScore {
   score: number
 }
 
-export interface Tag {
+export interface TagData {
   label: string
   description: string
   units: {
