@@ -93,7 +93,6 @@ export const getReportsForSamePeriod = (reports: Report[]) => {
   const mostRecentReport = reports.shift() as Report
   if (mostRecentReport.filed !== config.date) return []
   const samePeriodReports: Report[] = [mostRecentReport]
-  let year = mostRecentReport.fy
   reports.forEach((report) => {
     if (
       report.fp === mostRecentReport.fp &&

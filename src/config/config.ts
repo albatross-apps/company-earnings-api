@@ -1,11 +1,14 @@
 const weights = {
   //
   NetCashProvidedByUsedInOperatingActivities: 19,
+  // Revenue
   Revenues: 2,
+  RevenueFromContractWithCustomerExcludingAssessedTax: 2,
   RevenueFromContractWithCustomerIncludingAssessedTax: 2,
-  ProfitLoss: 8,
   // (Net Income)
+  ProfitLoss: 8,
   NetIncomeLoss: 8,
+  //
   StockholdersEquity: 5,
   CashAndCashEquivalentsAtCarryingValue: 2,
   Cash: 2,
@@ -17,6 +20,8 @@ const weights = {
   InventoryNet: -12,
   // Income tax payable
   IncreaseDecreaseInIncomeTaxesPayableNetOfIncomeTaxesReceivable: -9,
+  // Deferred Income tax
+  DeferredIncomeTaxExpenseBenefit: -6,
   // Share based compensation
   ShareBasedCompensation: -3,
   // Impairment of Long-Lived Assets to be Disposed of

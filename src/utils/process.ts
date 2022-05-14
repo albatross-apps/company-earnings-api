@@ -53,7 +53,10 @@ export const normalizeValues = (earnings: EarningsMetric[]) => {
  * @returns the score for every companies
  */
 
-export const getCompaniesPercentGrowthEveryQuarter = (earnings: Earnings[]) => {
+export const getCompaniesPercentGrowthEveryQuarter = (
+  earnings: Earnings[],
+  backYears?: number
+) => {
   const allCompaniesPercentGrowth = earnings.map((earning) => {
     const configuredTags = getConfiguredTags<TagData>(earning.tags)
     const earningPercentGrowth = Object.entries(configuredTags).map(
@@ -70,10 +73,12 @@ export const getCompaniesPercentGrowthEveryQuarter = (earnings: Earnings[]) => {
           }
         }
         const sortedReports = sortReportsByEndDate(data.units.USD)
-        const samePeriodReports = unique(
-          getReportsForSamePeriod(sortedReports),
-          'end'
+        let samePeriodReports = getReportsForSamePeriod(
+          unique(sortedReports, 'end')
         )
+        if (backYears) {
+          samePeriodReports = samePeriodReports.slice(0, backYears + 1)
+        }
         return calculateGrowthPercentPerQuarter(tag, samePeriodReports)
       }
     )

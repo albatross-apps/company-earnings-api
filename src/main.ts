@@ -27,18 +27,21 @@ const main = async () => {
       console.log('Saved To Cache')
     }
     const domesticEarnings = getDomesticCompanies(earnings)
-    const companiesScores = getCompaniesPercentGrowthEveryQuarter([
+    const companiesPercentageGrowth = getCompaniesPercentGrowthEveryQuarter([
       domesticEarnings[0],
     ])
+    console.log(companiesPercentageGrowth)
+
     console.log('')
-    const normalizedScores = normalizeValues(companiesScores)
+    const normalizedScores = normalizeValues(companiesPercentageGrowth)
     const scores = getAllScores(normalizedScores)
       .sort((a, b) => b.score - a.score)
       .map((x) => ({ ...x, score: x.score * 100 }))
     const combined = {
       ...scores.map((x) => {
-        const growthObj = companiesScores.find((g) => g.ticker === x.ticker)
-          ?.metrics!
+        const growthObj = companiesPercentageGrowth.find(
+          (g) => g.ticker === x.ticker
+        )?.metrics!
 
         const growthShort = Object.entries(growthObj).map(([key, value]) => ({
           key: key.replace(/[a-z]/g, ''),
