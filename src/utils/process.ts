@@ -13,10 +13,9 @@ import {
   sumFunc,
   sortReportsByEndDate,
   objArrToObj,
-  currencyFormatter,
   getConfiguredTags,
-  getDomesticCompanies,
   getReportsForSamePeriod,
+  unique,
 } from './utils'
 
 export const normalizeValues = (earnings: EarningsMetric[]) => {
@@ -71,18 +70,11 @@ export const getCompaniesPercentGrowthEveryQuarter = (earnings: Earnings[]) => {
           }
         }
         const sortedReports = sortReportsByEndDate(data.units.USD)
-        const samePeriodReports = getReportsForSamePeriod(sortedReports)
-        const formatter = currencyFormatter()
-        samePeriodReports.forEach((report) => {
-          console.log({
-            tag,
-            report: {
-              ...report,
-              val: formatter.format(report.val),
-            },
-          })
-        })
-        return calculateGrowthPercentPerQuarter(tag, sortedReports)
+        const samePeriodReports = unique(
+          getReportsForSamePeriod(sortedReports),
+          'end'
+        )
+        return calculateGrowthPercentPerQuarter(tag, samePeriodReports)
       }
     )
     const earningPercentGrowthMap = objArrToObj<string, number>(

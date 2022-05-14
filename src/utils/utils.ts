@@ -15,6 +15,10 @@ export const errorsCache = [] as unknown[]
 
 export const growthValues = [] as unknown[]
 
+export const unique = (reports: Report[], value: keyof Report) => [
+  ...new Map(reports.map((item) => [item[value], item])).values(),
+]
+
 export const mapTrim = <T extends unknown, TR extends unknown>(
   arr: T[],
   func: (val: T) => TR

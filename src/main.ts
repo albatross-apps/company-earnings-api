@@ -53,7 +53,7 @@ const main = async () => {
     }
     console.log('')
     console.log('Scores')
-    // console.table(combined)
+    console.table(combined)
   } catch (e) {
     console.log('')
     console.log('Something went wrong')
