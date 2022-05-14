@@ -1,5 +1,5 @@
 import { config } from 'mathjs'
-import { Weights } from './config'
+import { Weights } from '../config/config'
 
 export interface ReportResp {
   cik: number

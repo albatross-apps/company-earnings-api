@@ -1,5 +1,5 @@
-import { config } from './config'
-import { Defined, Report, TagsKey, TagsObject } from './types'
+import { config } from '../config'
+import { Defined, Report, TagsKey, TagsObject } from '../types'
 //@ts-ignore
 import CC from 'currency-converter-lt'
 import { number, re } from 'mathjs'

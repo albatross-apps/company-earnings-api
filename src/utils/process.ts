@@ -1,5 +1,5 @@
-import { config } from './config'
-import { EarningsMetric, TagsKey, TagsObject, Earnings, TagData } from './types'
+import { config } from '../config/config'
+import { EarningsMetric, TagsKey, TagsObject, Earnings, TagData } from '../types'
 import {
   calculateGrowthScorePerQuarter,
   mapTrim,

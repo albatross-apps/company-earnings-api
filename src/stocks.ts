@@ -1,12 +1,12 @@
-import { Earnings, TickerInfo } from './utils/types'
+import { Earnings, TickerInfo } from './types'
 import { errorsCache, getChunks, mapTrim, timeout } from './utils/utils'
-import { config } from './utils/config'
+import { config } from './config/config'
 import cliProgress from 'cli-progress'
 import {
   getCompanyReport,
   getEarningsCalendar,
   getCompanyTickers,
-} from './utils/dataFetch'
+} from './data/dataFetch'
 
 const getCompaniesEarningsByChunks = async (
   companyChunks: TickerInfo[][],

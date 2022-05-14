@@ -25,7 +25,7 @@ export type Weights = typeof weights
 
 export const config = {
   useCache: true,
-  filePath: './cache.json',
+  filePath: './cache',
   earningsChunkSize: 11,
   waitTime: 1000,
   date: '2022-05-11',

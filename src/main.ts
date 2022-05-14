@@ -1,28 +1,29 @@
 import { getAllEarningReportsByDate } from './stocks'
-import { config } from './utils/config'
+import { config } from './config'
 import {
   hasCache,
   getCachedEarnings,
   setCachedEarnings,
-} from './utils/dataCache'
+} from './data/dataCache'
 import {
   getCompaniesScoreEveryQuarter,
   normalizeValues,
   getAllScores,
 } from './utils/process'
-import { Earnings } from './utils/types'
-import { objArrToObj, errorsCache } from './utils/utils'
+import { Earnings } from './types'
+import { objArrToObj, errorsCache } from './utils'
 
 const main = async () => {
   try {
+    const filePath = `${config.filePath}/${config.date}.json`
     let reports: Earnings[]
-    if (config.useCache && hasCache(config.filePath)) {
-      reports = await getCachedEarnings(config.filePath)
+    if (config.useCache && hasCache(filePath)) {
+      reports = await getCachedEarnings(filePath)
       console.log('Cache Loaded')
     } else {
       reports = (await getAllEarningReportsByDate(config.date)) as Earnings[]
       console.log('Fetched')
-      await setCachedEarnings(config.filePath, reports)
+      await setCachedEarnings(filePath, reports)
       console.log('Saved To Cache')
     }
     const companiesScores = getCompaniesScoreEveryQuarter(reports)

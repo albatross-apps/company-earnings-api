@@ -1,6 +1,6 @@
-import { CalendarEarnings, Earnings, ReportResp, TickerInfo } from './types'
+import { CalendarEarnings, Earnings, ReportResp, TickerInfo } from '../types'
 import fetch from 'node-fetch'
-import { errorsCache, getChunks, mapTrim, timeout } from './utils'
+import { errorsCache, getChunks, mapTrim, timeout } from '../utils/utils'
 
 /**
  * By passing in a date this function will use the nasdaq API
