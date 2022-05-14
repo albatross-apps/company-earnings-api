@@ -8,7 +8,7 @@ export interface ReportResp {
   }
 }
 
-export type TagsObject = Record<keyof Weights, Tag>
+export type TagsObject = Record<keyof Weights, TagData>
 
 export type TagsKey = Extract<keyof TagsObject, string>
 
@@ -32,6 +32,7 @@ export interface TagData {
   description: string
   units: {
     USD: Report[]
+    CNY: Report[]
   }
 }
 

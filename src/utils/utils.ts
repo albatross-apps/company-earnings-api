@@ -1,5 +1,12 @@
 import { config } from '../config'
-import { Defined, Report, TagsKey, TagsObject } from '../types'
+import {
+  Defined,
+  Earnings,
+  Report,
+  TagData,
+  TagsKey,
+  TagsObject,
+} from '../types'
 //@ts-ignore
 import CC from 'currency-converter-lt'
 import { number, re } from 'mathjs'
@@ -29,9 +36,9 @@ export const getChunks = (a: unknown[], size: number) =>
   )
 
 export const sortReportsByEndDate = (reports: Report[]) => {
-  return reports.sort(
-    (a, b) => new Date(b.end).getTime() - new Date(a.end).getTime()
-  )
+  return reports
+    .sort((a, b) => new Date(b.filed).getTime() - new Date(a.filed).getTime())
+    .sort((a, b) => new Date(b.end).getTime() - new Date(a.end).getTime())
 }
 
 export const timeout = (time: number) =>
@@ -49,20 +56,49 @@ export const calcPercentGrowth = (prev: Report, curr: Report) => {
 }
 
 /**
- * Filters out all of the tags that are not weighted through the configuration
+ * Filters out all of the tags that are not included in the configuration
  * file.
  *
  * @param companyTagsMap
- * @returns all of the weighted tags
+ * @returns only configured tags
  */
-export const getWeightedTags = <T extends unknown>(
+export const getConfiguredTags = <T extends unknown>(
   companyTagsMap: Record<TagsKey, T>
 ) => {
-  const weightedTags = {} as Record<TagsKey, T>
+  const configuredTags = {} as Record<TagsKey, T>
   Object.keys(config.weights).forEach((key) => {
-    weightedTags[key as TagsKey] = companyTagsMap[key as TagsKey]
+    configuredTags[key as TagsKey] = companyTagsMap[key as TagsKey]
   })
-  return weightedTags
+  return configuredTags
+}
+
+export const getDomesticCompanies = (earning: Earnings[]) => {
+  return earning.filter((earnings) => {
+    return Object.values(earnings.tags).find((tagData: TagData) => {
+      if (tagData.units.USD) {
+        return !!tagData.units.USD.find((report) => {
+          return report.form === '10-K' || report.form === '10-Q'
+        })
+      }
+      return false
+    })
+  })
+}
+
+export const getReportsForSamePeriod = (reports: Report[]) => {
+  const mostRecentReport = reports.shift() as Report
+  if (mostRecentReport.filed !== config.date) return []
+  const samePeriodReports: Report[] = [mostRecentReport]
+  let year = mostRecentReport.fy
+  reports.forEach((report) => {
+    if (
+      report.fp === mostRecentReport.fp &&
+      report.form === mostRecentReport.form
+    ) {
+      samePeriodReports.push(report)
+    }
+  })
+  return samePeriodReports
 }
 
 export const sumFunc = <T extends number>(a: T, b: T) => a + b
@@ -97,7 +133,7 @@ export const convertCurrencies = (currencies: { [key: string]: Report[] }) => {
   return newCurrencies
 }
 
-export const calculateGrowthScorePerQuarter = (
+export const calculateGrowthPercentPerQuarter = (
   tag: string,
   reports: Report[]
 ) => {
@@ -106,22 +142,28 @@ export const calculateGrowthScorePerQuarter = (
       key: tag as keyof TagsObject,
       value: 0,
     }
-  const { score } = reports.reduce(
+  const { percent } = reports.reduce(
     (previousReport, currentReport) => {
       return {
-        score: previousReport.report
+        percent: previousReport.report
           ? calcPercentGrowth(previousReport.report, currentReport) +
-            previousReport.score
-          : previousReport.score,
+            previousReport.percent
+          : previousReport.percent,
         report: currentReport,
       }
     },
-    { score: 0, report: undefined as Report | undefined }
+    { percent: 0, report: undefined as Report | undefined }
   )
-  const averageScorePerQuarter = score / reports.length
+  const averageScorePerQuarter = percent / reports.length
 
   return {
     key: tag as keyof TagsObject,
     value: averageScorePerQuarter,
   }
 }
+
+export const currencyFormatter = (currency: string = 'USD') =>
+  new Intl.NumberFormat('en-US', {
+    style: 'currency',
+    currency,
+  })

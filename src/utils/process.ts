@@ -1,13 +1,22 @@
 import { config } from '../config/config'
-import { EarningsMetric, TagsKey, TagsObject, Earnings, TagData } from '../types'
 import {
-  calculateGrowthScorePerQuarter,
+  EarningsMetric,
+  TagsKey,
+  TagsObject,
+  Earnings,
+  TagData,
+} from '../types'
+import {
+  calculateGrowthPercentPerQuarter,
   mapTrim,
   normalize,
   sumFunc,
   sortReportsByEndDate,
-  getWeightedTags,
   objArrToObj,
+  currencyFormatter,
+  getConfiguredTags,
+  getDomesticCompanies,
+  getReportsForSamePeriod,
 } from './utils'
 
 export const normalizeValues = (earnings: EarningsMetric[]) => {
@@ -39,16 +48,16 @@ export const normalizeValues = (earnings: EarningsMetric[]) => {
 }
 
 /**
- * Takes a list of earnings and gets the weighted score taking
- * all quarter growth into consideration.
+ * Takes a list of earnings and gets the percent growth per quarter
  *
  * @param earnings
  * @returns the score for every companies
  */
 
-export const getCompaniesScoreEveryQuarter = (earnings: Earnings[]) => {
-  const allCompaniesScores = earnings.map((earning) => {
-    const earningScores = Object.entries(getWeightedTags(earning.tags)).map(
+export const getCompaniesPercentGrowthEveryQuarter = (earnings: Earnings[]) => {
+  const allCompaniesPercentGrowth = earnings.map((earning) => {
+    const configuredTags = getConfiguredTags<TagData>(earning.tags)
+    const earningPercentGrowth = Object.entries(configuredTags).map(
       ([tag, data]: [string, TagData]) => {
         if (
           !data ||
@@ -62,16 +71,29 @@ export const getCompaniesScoreEveryQuarter = (earnings: Earnings[]) => {
           }
         }
         const sortedReports = sortReportsByEndDate(data.units.USD)
-        return calculateGrowthScorePerQuarter(tag, sortedReports)
+        const samePeriodReports = getReportsForSamePeriod(sortedReports)
+        const formatter = currencyFormatter()
+        samePeriodReports.forEach((report) => {
+          console.log({
+            tag,
+            report: {
+              ...report,
+              val: formatter.format(report.val),
+            },
+          })
+        })
+        return calculateGrowthPercentPerQuarter(tag, sortedReports)
       }
     )
-    const earningScoresMap = objArrToObj<string, number>(earningScores)
+    const earningPercentGrowthMap = objArrToObj<string, number>(
+      earningPercentGrowth
+    )
     return {
       ticker: earning.ticker,
-      metrics: earningScoresMap,
+      metrics: earningPercentGrowthMap,
     } as EarningsMetric
   })
-  return allCompaniesScores as EarningsMetric[]
+  return allCompaniesPercentGrowth as EarningsMetric[]
 }
 
 export const getScore = (metics: Record<TagsKey, number>) =>

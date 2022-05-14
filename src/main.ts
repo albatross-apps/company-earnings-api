@@ -6,27 +6,30 @@ import {
   setCachedEarnings,
 } from './data/dataCache'
 import {
-  getCompaniesScoreEveryQuarter,
+  getCompaniesPercentGrowthEveryQuarter,
   normalizeValues,
   getAllScores,
 } from './utils/process'
 import { Earnings } from './types'
-import { objArrToObj, errorsCache } from './utils'
+import { objArrToObj, errorsCache, getDomesticCompanies } from './utils'
 
 const main = async () => {
   try {
     const filePath = `${config.filePath}/${config.date}.json`
-    let reports: Earnings[]
+    let earnings: Earnings[]
     if (config.useCache && hasCache(filePath)) {
-      reports = await getCachedEarnings(filePath)
+      earnings = await getCachedEarnings(filePath)
       console.log('Cache Loaded')
     } else {
-      reports = (await getAllEarningReportsByDate(config.date)) as Earnings[]
+      earnings = (await getAllEarningReportsByDate(config.date)) as Earnings[]
       console.log('Fetched')
-      await setCachedEarnings(filePath, reports)
+      await setCachedEarnings(filePath, earnings)
       console.log('Saved To Cache')
     }
-    const companiesScores = getCompaniesScoreEveryQuarter(reports)
+    const domesticEarnings = getDomesticCompanies(earnings)
+    const companiesScores = getCompaniesPercentGrowthEveryQuarter([
+      domesticEarnings[0],
+    ])
     console.log('')
     const normalizedScores = normalizeValues(companiesScores)
     const scores = getAllScores(normalizedScores)
@@ -50,7 +53,7 @@ const main = async () => {
     }
     console.log('')
     console.log('Scores')
-    console.table(combined)
+    // console.table(combined)
   } catch (e) {
     console.log('')
     console.log('Something went wrong')
