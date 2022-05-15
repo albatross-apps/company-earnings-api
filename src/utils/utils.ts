@@ -3,6 +3,7 @@ import {
   Defined,
   Earnings,
   Report,
+  ReportPretty,
   TagData,
   TagsKey,
   TagsObject,
@@ -14,6 +15,10 @@ import { number, re } from 'mathjs'
 export const errorsCache = [] as unknown[]
 
 export const growthValues = [] as unknown[]
+
+export const toPercentFormat = (val: number) => {
+  return `${val.toFixed(2)}%`
+}
 
 export const unique = (reports: Report[], value: keyof Report) => [
   ...new Map(reports.map((item) => [item[value], item])).values(),
@@ -39,10 +44,10 @@ export const getChunks = (a: unknown[], size: number) =>
     a.slice(i * size, i * size + size)
   )
 
-export const sortReportsByEndDate = (reports: Report[]) => {
+export const sortReports = (reports: Report[], field: keyof Report) => {
   return reports
-    .sort((a, b) => new Date(b.filed).getTime() - new Date(a.filed).getTime())
-    .sort((a, b) => new Date(b.end).getTime() - new Date(a.end).getTime())
+    .sort((a, b) => new Date(b[field]).getTime() - new Date(a[field]).getTime())
+    .sort((a, b) => new Date(b[field]).getTime() - new Date(a[field]).getTime())
 }
 
 export const timeout = (time: number) =>
@@ -71,7 +76,8 @@ export const getConfiguredTags = <T extends unknown>(
 ) => {
   const configuredTags = {} as Record<TagsKey, T>
   Object.keys(config.weights).forEach((key) => {
-    configuredTags[key as TagsKey] = companyTagsMap[key as TagsKey]
+    if (companyTagsMap[key as TagsKey])
+      configuredTags[key as TagsKey] = companyTagsMap[key as TagsKey]
   })
   return configuredTags
 }
@@ -145,23 +151,42 @@ export const calculateGrowthPercentPerQuarter = (
       key: tag as keyof TagsObject,
       value: 0,
     }
-  const { percent } = reports.reduce(
-    (previousReport, currentReport) => {
+  const { percent, reportsData } = reports.reduce(
+    (previous, currentReport) => {
+      const percentGrowth = previous.previousReport
+        ? calcPercentGrowth(previous.previousReport, currentReport)
+        : undefined
+      previous.reportsData.push({
+        form: currentReport.form,
+        fp: currentReport.fp,
+        fy: currentReport.fy,
+        start: currentReport.start,
+        end: currentReport.end,
+        val: currencyFormatter().format(currentReport.val),
+        percentGrowthYoY: percentGrowth
+          ? toPercentFormat(percentGrowth)
+          : undefined,
+      })
       return {
-        percent: previousReport.report
-          ? calcPercentGrowth(previousReport.report, currentReport) +
-            previousReport.percent
-          : previousReport.percent,
-        report: currentReport,
+        percent: percentGrowth
+          ? percentGrowth + previous.percent
+          : previous.percent,
+        previousReport: currentReport,
+        reportsData: previous.reportsData,
       }
     },
-    { percent: 0, report: undefined as Report | undefined }
+    {
+      percent: 0,
+      previousReport: undefined as Report | undefined,
+      reportsData: [] as ReportPretty[],
+    }
   )
   const averageScorePerQuarter = percent / reports.length
 
   return {
     key: tag as keyof TagsObject,
     value: averageScorePerQuarter,
+    reports: reportsData,
   }
 }
 

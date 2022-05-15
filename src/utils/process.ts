@@ -11,7 +11,7 @@ import {
   mapTrim,
   normalize,
   sumFunc,
-  sortReportsByEndDate,
+  sortReports,
   objArrToObj,
   getConfiguredTags,
   getReportsForSamePeriod,
@@ -47,10 +47,12 @@ export const normalizeValues = (earnings: EarningsMetric[]) => {
 }
 
 /**
- * Takes a list of earnings and gets the percent growth per quarter
+ * Takes a list of earnings and gets the percent growth per quarter.
  *
  * @param earnings
- * @returns the score for every companies
+ * @param backYears optional years you want to go back,
+ * providing no value will default to all.
+ * @returns the score for every companies.
  */
 
 export const getCompaniesPercentGrowthEveryQuarter = (
@@ -61,27 +63,23 @@ export const getCompaniesPercentGrowthEveryQuarter = (
     const configuredTags = getConfiguredTags<TagData>(earning.tags)
     const earningPercentGrowth = Object.entries(configuredTags).map(
       ([tag, data]: [string, TagData]) => {
-        if (
-          !data ||
-          !Object.keys(data.units).find((currency) =>
-            config.currencies.includes(currency)
-          )
-        ) {
-          return {
-            key: tag as keyof TagsObject,
-            value: 0,
-          }
-        }
-        const sortedReports = sortReportsByEndDate(data.units.USD)
-        let samePeriodReports = getReportsForSamePeriod(
-          unique(sortedReports, 'end')
+        const uniqueSortedReports = unique(
+          sortReports(data.units.USD, 'end'),
+          'filed'
         )
+        let samePeriodReports = getReportsForSamePeriod(uniqueSortedReports)
         if (backYears) {
           samePeriodReports = samePeriodReports.slice(0, backYears + 1)
         }
         return calculateGrowthPercentPerQuarter(tag, samePeriodReports)
       }
     )
+    earningPercentGrowth.forEach((x) => {
+      console.log(x.key)
+      x.reports?.forEach((y) => {
+        console.log(y)
+      })
+    })
     const earningPercentGrowthMap = objArrToObj<string, number>(
       earningPercentGrowth
     )

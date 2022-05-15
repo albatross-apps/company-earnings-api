@@ -41,10 +41,20 @@ export interface Report {
   form: string
   fy: number
   fp: string
-
+  start: string
   end: string
   filed: string
   frame: string
+}
+
+export interface ReportPretty {
+  val: string
+  form: string
+  fy: number
+  fp: string
+  start: string
+  end: string
+  percentGrowthYoY: string | undefined
 }
 
 export interface CompanyProfile {
