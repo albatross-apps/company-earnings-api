@@ -44,10 +44,16 @@ export const getChunks = (a: unknown[], size: number) =>
     a.slice(i * size, i * size + size)
   )
 
-export const sortReports = (reports: Report[], field: keyof Report) => {
-  return reports
-    .sort((a, b) => new Date(b[field]).getTime() - new Date(a[field]).getTime())
-    .sort((a, b) => new Date(b[field]).getTime() - new Date(a[field]).getTime())
+export const sortReports = (
+  reports: Report[],
+  field1: keyof Report,
+  field2: keyof Report
+) => {
+  return reports.sort(
+    (a, b) =>
+      new Date(a[field1]).getTime() - new Date(b[field1]).getTime() ||
+      new Date(a[field2]).getTime() - new Date(b[field2]).getTime()
+  )
 }
 
 export const timeout = (time: number) =>
@@ -61,7 +67,7 @@ export const calcPercentGrowth = (prev: Report, curr: Report) => {
   if (!prev.val || !curr.val) {
     return 0
   }
-  return ((prev.val - curr.val) / prev.val) * 100
+  return ((curr.val - prev.val) / Math.abs(prev.val)) * 100
 }
 
 /**
@@ -107,14 +113,15 @@ export const getReportsByPeriod = (
   reports: Report[],
   period?: 'Q1' | 'Q2' | 'Q3' | 'FY'
 ) => {
-  const mostRecentReport = reports[0]
+  const mostRecentReport = reports[reports.length - 1]
   if (!period && mostRecentReport.filed !== config.date) return []
   const reportPeriod = period || mostRecentReport.fp
-  return reports.filter(
+  const newReports = reports.filter(
     (report) =>
       report.fp === reportPeriod &&
       report.form === (period === 'FY' ? '10-K' : '10-Q')
   )
+  return newReports
 }
 
 export const sumFunc = <T extends number>(a: T, b: T) => a + b
@@ -160,6 +167,12 @@ export const calculateGrowthPercentPerQuarter = (
     }
   const { percent, reportsData } = reports.reduce(
     (previous, currentReport) => {
+      // console.log({ curr: currentReport, prev: previous.previousReport })
+      // console.log(
+      //   previous.previousReport &&
+      //     calcPercentGrowth(previous.previousReport, currentReport)
+      // )
+
       const percentGrowth = previous.previousReport
         ? calcPercentGrowth(previous.previousReport, currentReport)
         : undefined

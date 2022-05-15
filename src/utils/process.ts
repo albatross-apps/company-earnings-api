@@ -63,23 +63,20 @@ export const getCompaniesPercentGrowthEveryQuarter = (
     const configuredTags = getConfiguredTags<TagData>(earning.tags)
     const earningPercentGrowth = Object.entries(configuredTags).map(
       ([tag, data]: [string, TagData]) => {
-        const uniqueSortedReports = unique(
-          sortReports(data.units.USD, 'end'),
-          'filed'
-        )
-        let samePeriodReports = getReportsByPeriod(uniqueSortedReports, 'FY')
+        const uniqueSortedReports = sortReports(data.units.USD, 'filed', 'end')
+        let samePeriodReports = getReportsByPeriod(uniqueSortedReports)
         if (backYears) {
           samePeriodReports = samePeriodReports.slice(0, backYears + 1)
         }
         return calculateGrowthPercentPerQuarter(tag, samePeriodReports)
       }
     )
-    earningPercentGrowth.forEach((x) => {
-      console.log(x.key)
-      x.reports?.forEach((y) => {
-        console.log(y)
-      })
-    })
+    // earningPercentGrowth.forEach((x) => {
+    //   // console.log(x.key)
+    //   x.reports?.forEach((y) => {
+    //     console.log(y)
+    //   })
+    // })
     const earningPercentGrowthMap = objArrToObj<string, number>(
       earningPercentGrowth
     )

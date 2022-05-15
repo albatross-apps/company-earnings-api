@@ -15,8 +15,8 @@ const weights = {
   PaymentsToAcquireProductiveAssets: -10,
   PaymentsToAcquirePropertyPlantAndEquipment: -8,
   PaymentsToAcquireBusinessesNetOfCashAcquired: -3,
-  NetCashProvidedByUsedInInvestingActivities: -7,
-  NetCashProvidedByUsedInFinancingActivities: -5,
+  // NetCashProvidedByUsedInInvestingActivities: -7,
+  // NetCashProvidedByUsedInFinancingActivities: -5,
   InventoryNet: -12,
   // Income tax payable
   IncreaseDecreaseInIncomeTaxesPayableNetOfIncomeTaxesReceivable: -9,
