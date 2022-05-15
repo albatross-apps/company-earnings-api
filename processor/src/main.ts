@@ -4,6 +4,7 @@ import {
   hasCache,
   getCachedEarnings,
   setCachedEarnings,
+  setCache,
 } from './data/dataCache'
 import {
   getCompaniesPercentGrowthEveryQuarter,
@@ -36,6 +37,23 @@ const main = async () => {
     const scores = getAllScores(normalizedScores)
       .sort((a, b) => b.score - a.score)
       .map((x) => ({ ...x, score: x.score * 100 }))
+    const data = scores.map((x) => {
+      const growthObj = companiesPercentageGrowth.find(
+        (g) => g.ticker === x.ticker
+      )?.metrics!
+      const normalizedObj = normalizedScores.find((g) => g.ticker === x.ticker)
+        ?.metrics!
+
+      return {
+        ticker: x.ticker,
+        score: Number(x.score.toFixed(0)),
+        growths: growthObj,
+        normalized: normalizedObj,
+      }
+    })
+
+    const dataPath = `${config.filePath}/data.json`
+    setCache(dataPath, data)
     const combined = {
       ...scores.map((x) => {
         const growthObj = companiesPercentageGrowth.find(
