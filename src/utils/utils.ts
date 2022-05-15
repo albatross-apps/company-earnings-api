@@ -95,19 +95,26 @@ export const getDomesticCompanies = (earning: Earnings[]) => {
   })
 }
 
-export const getReportsForSamePeriod = (reports: Report[]) => {
-  const mostRecentReport = reports.shift() as Report
-  if (mostRecentReport.filed !== config.date) return []
-  const samePeriodReports: Report[] = [mostRecentReport]
-  reports.forEach((report) => {
-    if (
-      report.fp === mostRecentReport.fp &&
-      report.form === mostRecentReport.form
-    ) {
-      samePeriodReports.push(report)
-    }
-  })
-  return samePeriodReports
+/**
+ * Provided a list of reports,
+ *
+ * @param reports list of all the reports for a tag.
+ * @param period report quarter
+ * @returns
+ */
+
+export const getReportsByPeriod = (
+  reports: Report[],
+  period?: 'Q1' | 'Q2' | 'Q3' | 'FY'
+) => {
+  const mostRecentReport = reports[0]
+  if (!period && mostRecentReport.filed !== config.date) return []
+  const reportPeriod = period || mostRecentReport.fp
+  return reports.filter(
+    (report) =>
+      report.fp === reportPeriod &&
+      report.form === (period === 'FY' ? '10-K' : '10-Q')
+  )
 }
 
 export const sumFunc = <T extends number>(a: T, b: T) => a + b

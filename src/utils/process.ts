@@ -14,7 +14,7 @@ import {
   sortReports,
   objArrToObj,
   getConfiguredTags,
-  getReportsForSamePeriod,
+  getReportsByPeriod,
   unique,
 } from './utils'
 
@@ -67,7 +67,7 @@ export const getCompaniesPercentGrowthEveryQuarter = (
           sortReports(data.units.USD, 'end'),
           'filed'
         )
-        let samePeriodReports = getReportsForSamePeriod(uniqueSortedReports)
+        let samePeriodReports = getReportsByPeriod(uniqueSortedReports, 'FY')
         if (backYears) {
           samePeriodReports = samePeriodReports.slice(0, backYears + 1)
         }
