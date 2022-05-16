@@ -1,13 +1,18 @@
 import { Earnings, TagData, TagsObject } from '../types'
 
+interface Data {
+    tag: string 
+    val: number
+}
+
 export const load = (earning: Earnings) => {
-  const tags = {} as { [key: string]: TagData }
+  const tags = {} as { [key: string]: TagData | undefined }
 
   // Assets
-  tags['Assets'] = earning.tags['Assets'] || 0
+  tags['Assets'] = earning.tags['Assets'] || undefined
 
   // Current Assets
-  tags['CurrentAssets'] = earning.tags['AssetsCurrent'] || 0
+  tags['CurrentAssets'] = earning.tags['AssetsCurrent'] || undefined
 
   // Noncurrent Assets
   tags['NoncurrentAssets'] = earning.tags['AssetsNoncurrent']
@@ -15,7 +20,7 @@ export const load = (earning: Earnings) => {
     if (tags['Assets'] && tags['CurrentAssets']) {
       tags['NoncurrentAssets'] = tags['Assets'] - tags['CurrentAssets']
     } else {
-      tags['NoncurrentAssets'] = 0
+      tags['NoncurrentAssets'] = undefined
     }
   }
 
@@ -25,12 +30,12 @@ export const load = (earning: Earnings) => {
   if (tags['LiabilitiesAndEquity'] === null) {
     tags['LiabilitiesAndEquity'] = earning.tags['LiabilitiesAndPartnersCapital']
     if (tags['LiabilitiesAndEquity']) {
-      tags['LiabilitiesAndEquity'] = 0
+      tags['LiabilitiesAndEquity'] = undefined
     }
   }
 
   // Liabilities
-  tags['Liabilities'] = earning.tags['Liabilities'] || 0
+  tags['Liabilities'] = earning.tags['Liabilities'] || undefined
 
   // CurrentLiabilities
   tags['CurrentLiabilities'] = earning.tags['LiabilitiesCurrent']
@@ -42,13 +47,13 @@ export const load = (earning: Earnings) => {
       tags['NoncurrentLiabilities'] =
         tags['Liabilities'] - tags['CurrentLiabilities']
     } else {
-      tags['NoncurrentLiabilities'] = 0
+      tags['NoncurrentLiabilities'] = undefined
     }
   }
 
   // CommitmentsAndContingencies
   tags['CommitmentsAndContingencies'] =
-    earning.tags['CommitmentsAndContingencies'] || 0
+    earning.tags['CommitmentsAndContingencies'] || undefined
 
   // TemporaryEquity
   tags['TemporaryEquity'] =
@@ -58,7 +63,7 @@ export const load = (earning: Earnings) => {
     earning.tags['TemporaryEquityValueExcludingAdditionalPaidInCapital'] ||
     earning.tags['TemporaryEquityCarryingAmountAttributableToParent'] ||
     earning.tags['RedeemableNoncontrollingInterestEquityFairValue'] ||
-    0
+    undefined
 
   // RedeemableNoncontrollingInterest (added to temporary equity)
   var redeemableNoncontrollingInterest =
@@ -66,7 +71,7 @@ export const load = (earning: Earnings) => {
     earning.tags[
       'RedeemableNoncontrollingInterestEquityCommonCarryingAmount'
     ] ||
-    0
+    undefined
 
   // This adds redeemable noncontrolling interest and temporary equity which are rare, but can be reported seperately
   if (tags['TemporaryEquity']) {
@@ -87,24 +92,24 @@ export const load = (earning: Earnings) => {
     earning.tags['CommonStockholdersEquity'] ||
     earning.tags['MemberEquity'] ||
     earning.tags['AssetsNet'] ||
-    0
+    undefined
 
   // EquityAttributableToNoncontrollingInterest
   tags['EquityAttributableToNoncontrollingInterest'] =
     earning.tags['MinorityInterest'] ||
     earning.tags['PartnersCapitalAttributableToNoncontrollingInterest'] ||
-    0
+    undefined
 
   // EquityAttributableToParent
   tags['EquityAttributableToParent'] =
     earning.tags['StockholdersEquity'] ||
     earning.tags['LiabilitiesAndPartnersCapital'] ||
-    0
+    undefined
 
   // BS Adjustments
   // If total assets is missing, try using current assets
   if (
-    tags['Assets'] === 0 &&
+    tags['Assets'] === undefined &&
     tags['Assets'] === tags['LiabilitiesAndEquity'] &&
     tags['CurrentAssets'] === tags['LiabilitiesAndEquity']
   ) {
@@ -113,8 +118,8 @@ export const load = (earning: Earnings) => {
 
   // Added to fix Assets
   if (
-    tags['Assets'] === 0 &&
-    tags['LiabilitiesAndEquity'] !== 0 &&
+    tags['Assets'] === undefined &&
+    tags['LiabilitiesAndEquity'] !== undefined &&
     tags['CurrentAssets'] === tags['LiabilitiesAndEquity']
   ) {
     tags['Assets'] = tags['CurrentAssets']
@@ -122,26 +127,29 @@ export const load = (earning: Earnings) => {
 
   // Added to fix Assets even more
   if (
-    tags['Assets'] === 0 &&
-    tags['NoncurrentAssets'] === 0 &&
-    tags['LiabilitiesAndEquity'] !== 0 &&
+    tags['Assets'] === undefined &&
+    tags['NoncurrentAssets'] === undefined &&
+    tags['LiabilitiesAndEquity'] !== undefined &&
     tags['LiabilitiesAndEquity'] === tags['Liabilities'] + tags['Equity']
   ) {
     tags['Assets'] = tags['CurrentAssets']
   }
 
-  if (tags['Assets'] !== 0 && tags['CurrentAssets'] !== 0) {
+  if (tags['Assets'] !== undefined && tags['CurrentAssets'] !== undefined) {
     tags['NoncurrentAssets'] = tags['Assets'] - tags['CurrentAssets']
   }
 
-  if (tags['LiabilitiesAndEquity'] === 0 && tags['Assets'] !== 0) {
+  if (
+    tags['LiabilitiesAndEquity'] === undefined &&
+    tags['Assets'] !== undefined
+  ) {
     tags['LiabilitiesAndEquity'] = tags['Assets']
   }
 
   // Impute: Equity based no parent and noncontrolling interest being present
   if (
-    tags['EquityAttributableToNoncontrollingInterest'] !== 0 &&
-    tags['EquityAttributableToParent'] !== 0
+    tags['EquityAttributableToNoncontrollingInterest'] !== undefined &&
+    tags['EquityAttributableToParent'] !== undefined
   ) {
     tags['Equity'] =
       tags['EquityAttributableToParent'] +
@@ -149,14 +157,14 @@ export const load = (earning: Earnings) => {
   }
 
   if (
-    tags['Equity'] === 0 &&
-    tags['EquityAttributableToNoncontrollingInterest'] === 0 &&
-    tags['EquityAttributableToParent'] !== 0
+    tags['Equity'] === undefined &&
+    tags['EquityAttributableToNoncontrollingInterest'] === undefined &&
+    tags['EquityAttributableToParent'] !== undefined
   ) {
     tags['Equity'] = tags['EquityAttributableToParent']
   }
 
-  if (tags['Equity'] === 0) {
+  if (tags['Equity'] === undefined) {
     tags['Equity'] =
       tags['EquityAttributableToParent'] +
       tags['EquityAttributableToNoncontrollingInterest']
@@ -164,9 +172,9 @@ export const load = (earning: Earnings) => {
 
   // Added: Impute Equity attributable to parent based on existence of equity and noncontrolling interest.
   if (
-    tags['Equity'] !== 0 &&
-    tags['EquityAttributableToNoncontrollingInterest'] !== 0 &&
-    tags['EquityAttributableToParent'] === 0
+    tags['Equity'] !== undefined &&
+    tags['EquityAttributableToNoncontrollingInterest'] !== undefined &&
+    tags['EquityAttributableToParent'] === undefined
   ) {
     tags['EquityAttributableToParent'] =
       tags['Equity'] - tags['EquityAttributableToNoncontrollingInterest']
@@ -174,15 +182,15 @@ export const load = (earning: Earnings) => {
 
   // Added: Impute Equity attributable to parent based on existence of equity and noncontrolling interest.
   if (
-    tags['Equity'] !== 0 &&
-    tags['EquityAttributableToNoncontrollingInterest'] === 0 &&
-    tags['EquityAttributableToParent'] === 0
+    tags['Equity'] !== undefined &&
+    tags['EquityAttributableToNoncontrollingInterest'] === undefined &&
+    tags['EquityAttributableToParent'] === undefined
   ) {
     tags['EquityAttributableToParent'] = tags['Equity']
   }
 
   // if total liabilities is missing, figure it out based on liabilities and equity
-  if (tags['Liabilities'] === 0 && tags['Equity'] !== 0) {
+  if (tags['Liabilities'] === undefined && tags['Equity'] !== undefined) {
     tags['Liabilities'] =
       tags['LiabilitiesAndEquity'] -
       (tags['CommitmentsAndContingencies'] +
@@ -191,116 +199,29 @@ export const load = (earning: Earnings) => {
   }
 
   // This seems incorrect because liabilities might not be reported
-  if (tags['Liabilities'] !== 0 && tags['CurrentLiabilities'] !== 0) {
+  if (
+    tags['Liabilities'] !== undefined &&
+    tags['CurrentLiabilities'] !== undefined
+  ) {
     tags['NoncurrentLiabilities'] =
       tags['Liabilities'] - tags['CurrentLiabilities']
   }
 
   // Added to fix liabilities based on current liabilities
   if (
-    tags['Liabilities'] === 0 &&
-    tags['CurrentLiabilities'] !== 0 &&
-    tags['NoncurrentLiabilities'] === 0
+    tags['Liabilities'] === undefined &&
+    tags['CurrentLiabilities'] !== undefined &&
+    tags['NoncurrentLiabilities'] === undefined
   ) {
     tags['Liabilities'] = tags['CurrentLiabilities']
   }
 
-  var lngBSCheck1 =
-    tags['Equity'] -
-    (tags['EquityAttributableToParent'] +
-      tags['EquityAttributableToNoncontrollingInterest'])
-  var lngBSCheck2 = tags['Assets'] - tags['LiabilitiesAndEquity']
-  var lngBSCheck3
-  var lngBSCheck4
-  var lngBSCheck5
-
   if (
-    tags['CurrentAssets'] === 0 &&
-    tags['NoncurrentAssets'] === 0 &&
-    tags['CurrentLiabilities'] === 0 &&
-    tags['NoncurrentLiabilities'] === 0
+    tags['CurrentAssets'] === undefined &&
+    tags['NoncurrentAssets'] === undefined &&
+    tags['CurrentLiabilities'] === undefined &&
+    tags['NoncurrentLiabilities'] === undefined
   ) {
-    // If current assets/liabilities are zero and noncurrent assets/liabilities;: don't do this test because the balance sheet is not classified
-    lngBSCheck3 = 0
-    lngBSCheck4 = 0
-  } else {
-    // Balance sheet IS classified
-    lngBSCheck3 =
-      tags['Assets'] - (tags['CurrentAssets'] + tags['NoncurrentAssets'])
-    lngBSCheck4 =
-      tags['Liabilities'] -
-      (tags['CurrentLiabilities'] + tags['NoncurrentLiabilities'])
-  }
-
-  lngBSCheck5 =
-    tags['LiabilitiesAndEquity'] -
-    (tags['Liabilities'] +
-      tags['CommitmentsAndContingencies'] +
-      tags['TemporaryEquity'] +
-      tags['Equity'])
-
-  if (lngBSCheck1) {
-    console.log(
-      'BS1: Equity(' +
-        tags['Equity'] +
-        ') = EquityAttributableToParent(' +
-        tags['EquityAttributableToParent'] +
-        ') , EquityAttributableToNoncontrollingInterest(' +
-        tags['EquityAttributableToNoncontrollingInterest'] +
-        '): ' +
-        lngBSCheck1
-    )
-  }
-  if (lngBSCheck2) {
-    console.log(
-      'BS2: Assets(' +
-        tags['Assets'] +
-        ') = LiabilitiesAndEquity(' +
-        tags['LiabilitiesAndEquity'] +
-        '): ' +
-        lngBSCheck2
-    )
-  }
-  if (lngBSCheck3) {
-    console.log(
-      'BS3: Assets(' +
-        tags['Assets'] +
-        ') = CurrentAssets(' +
-        tags['CurrentAssets'] +
-        ') + NoncurrentAssets(' +
-        tags['NoncurrentAssets'] +
-        '): ' +
-        lngBSCheck3
-    )
-  }
-  if (lngBSCheck4) {
-    console.log(
-      'BS4: Liabilities(' +
-        tags['Liabilities'] +
-        ')= CurrentLiabilities(' +
-        tags['CurrentLiabilities'] +
-        ') + NoncurrentLiabilities(' +
-        tags['NoncurrentLiabilities'] +
-        '): ' +
-        lngBSCheck4
-    )
-  }
-  if (lngBSCheck5) {
-    console.log(
-      'BS5: Liabilities and Equity(' +
-        tags['LiabilitiesAndEquity'] +
-        ')= Liabilities(' +
-        tags['Liabilities'] +
-        ') + CommitmentsAndContingencies(' +
-        tags['CommitmentsAndContingencies'] +
-        ')+ TemporaryEquity(' +
-        tags['TemporaryEquity'] +
-        ')+ Equity(' +
-        tags['Equity'] +
-        '): ' +
-        lngBSCheck5
-    )
-  }
 
   // Revenues
   tags['Revenues'] =
@@ -328,7 +249,7 @@ export const load = (earning: Earnings) => {
 
   // GrossProfit
   tags['GrossProfit'] =
-    earning.tags['GrossProfit'] || earning.tags['GrossProfit'] || 0
+    earning.tags['GrossProfit'] || earning.tags['GrossProfit'] || undefined
 
   // OperatingExpenses
   tags['OperatingExpenses'] =
@@ -338,31 +259,33 @@ export const load = (earning: Earnings) => {
 
   // CostsAndExpenses
   tags['CostsAndExpenses'] =
-    earning.tags['CostsAndExpenses'] || earning.tags['CostsAndExpenses'] || 0
+    earning.tags['CostsAndExpenses'] ||
+    earning.tags['CostsAndExpenses'] ||
+    undefined
 
   // OtherOperatingIncome
   tags['OtherOperatingIncome'] =
     earning.tags['OtherOperatingIncome'] ||
     earning.tags['OtherOperatingIncome'] ||
-    0
+    undefined
 
   // OperatingIncomeLoss
   tags['OperatingIncomeLoss'] =
     earning.tags['OperatingIncomeLoss'] ||
     earning.tags['OperatingIncomeLoss'] ||
-    0
+    undefined
 
   // NonoperatingIncomeLoss
   tags['NonoperatingIncomeLoss'] =
     earning.tags['NonoperatingIncomeExpense'] ||
     earning.tags['NonoperatingIncomeExpense'] ||
-    0
+    undefined
 
   // InterestAndDebtExpense
   tags['InterestAndDebtExpense'] =
     earning.tags['InterestAndDebtExpense'] ||
     earning.tags['InterestAndDebtExpense'] ||
-    0
+    undefined
 
   // IncomeBeforeEquityMethodInvestments
   tags['IncomeBeforeEquityMethodInvestments'] =
@@ -372,13 +295,13 @@ export const load = (earning: Earnings) => {
     earning.tags[
       'IncomeLossFromContinuingOperationsBeforeIncomeTaxesMinorityInterestAndIncomeLossFromEquityMethodInvestments'
     ] ||
-    0
+    undefined
 
   // IncomeFromEquityMethodInvestments
   tags['IncomeFromEquityMethodInvestments'] =
     earning.tags['IncomeLossFromEquityMethodInvestments'] ||
     earning.tags['IncomeLossFromEquityMethodInvestments'] ||
-    0
+    undefined
 
   // IncomeFromContinuingOperationsBeforeTax
   tags['IncomeFromContinuingOperationsBeforeTax'] =
@@ -388,13 +311,13 @@ export const load = (earning: Earnings) => {
     earning.tags[
       'IncomeLossFromContinuingOperationsBeforeIncomeTaxesExtraordinaryItemsNoncontrollingInterest'
     ] ||
-    0
+    undefined
 
   // IncomeTaxExpenseBenefit
   tags['IncomeTaxExpenseBenefit'] =
     earning.tags['IncomeTaxExpenseBenefit'] ||
     earning.tags['IncomeTaxExpenseBenefitContinuingOperations'] ||
-    0
+    undefined
 
   // IncomeFromContinuingOperationsAfterTax
   tags['IncomeFromContinuingOperationsAfterTax'] =
@@ -404,7 +327,7 @@ export const load = (earning: Earnings) => {
     earning.tags[
       'IncomeLossBeforeExtraordinaryItemsAndCumulativeEffectOfChangeInAccountingPrinciple'
     ] ||
-    0
+    undefined
 
   // IncomeFromDiscontinuedOperations
   tags['IncomeFromDiscontinuedOperations'] =
@@ -415,13 +338,13 @@ export const load = (earning: Earnings) => {
     earning.tags[
       'IncomeLossFromDiscontinuedOperationsNetOfTaxAttributableToReportingEntity'
     ] ||
-    0
+    undefined
 
   // ExtraordaryItemsGainLoss
   tags['ExtraordaryItemsGainLoss'] =
     earning.tags['ExtraordinaryItemNetOfTax'] ||
     earning.tags['ExtraordinaryItemNetOfTax'] ||
-    0
+    undefined
 
   // NetIncomeLoss
   tags['NetIncomeLoss'] =
@@ -433,22 +356,24 @@ export const load = (earning: Earnings) => {
     earning.tags[
       'IncomeLossFromContinuingOperationsIncludingPortionAttributableToNoncontrollingInterest'
     ] ||
-    0
+    undefined
 
   // NetIncomeAvailableToCommonStockholdersBasic
   tags['NetIncomeAvailableToCommonStockholdersBasic'] =
-    earning.tags['NetIncomeLossAvailableToCommonStockholdersBasic'] || 0
+    earning.tags['NetIncomeLossAvailableToCommonStockholdersBasic'] || undefined
 
   // #PreferredStockDividendsAndOtherAdjustments
   tags['PreferredStockDividendsAndOtherAdjustments'] =
-    earning.tags['PreferredStockDividendsAndOtherAdjustments'] || 0
+    earning.tags['PreferredStockDividendsAndOtherAdjustments'] || undefined
 
   // #NetIncomeAttributableToNoncontrollingInterest
   tags['NetIncomeAttributableToNoncontrollingInterest'] =
-    earning.tags['NetIncomeLossAttributableToNoncontrollingInterest'] || 0
+    earning.tags['NetIncomeLossAttributableToNoncontrollingInterest'] ||
+    undefined
 
   // #NetIncomeAttributableToParent
-  tags['NetIncomeAttributableToParent'] = earning.tags['NetIncomeLoss'] || 0
+  tags['NetIncomeAttributableToParent'] =
+    earning.tags['NetIncomeLoss'] || undefined
 
   // OtherComprehensiveIncome
   tags['OtherComprehensiveIncome'] =
@@ -461,13 +386,13 @@ export const load = (earning: Earnings) => {
     earning.tags[
       'ComprehensiveIncomeNetOfTaxIncludingPortionAttributableToNoncontrollingInterest'
     ]
-  earning.tags['ComprehensiveIncomeNetOfTax'] || 0
+  earning.tags['ComprehensiveIncomeNetOfTax'] || undefined
 
   // ComprehensiveIncomeAttributableToParent
   tags['ComprehensiveIncomeAttributableToParent'] =
     earning.tags['ComprehensiveIncomeNetOfTax'] ||
     earning.tags['ComprehensiveIncomeNetOfTax'] ||
-    0
+    undefined
 
   // ComprehensiveIncomeAttributableToNoncontrollingInterest
   tags['ComprehensiveIncomeAttributableToNoncontrollingInterest'] =
@@ -477,7 +402,7 @@ export const load = (earning: Earnings) => {
     earning.tags[
       'ComprehensiveIncomeNetOfTaxAttributableToNoncontrollingInterest'
     ] ||
-    0
+    undefined
 
   // 'Adjustments to income statement information
   // Impute: NonoperatingIncomeLossPlusInterestAndDebtExpense
@@ -486,9 +411,9 @@ export const load = (earning: Earnings) => {
 
   // Impute: Net income available to common stockholders  (if it does not exist)
   if (
-    tags['NetIncomeAvailableToCommonStockholdersBasic'] === 0 &&
-    tags['PreferredStockDividendsAndOtherAdjustments'] === 0 &&
-    tags['NetIncomeAttributableToParent'] !== 0
+    tags['NetIncomeAvailableToCommonStockholdersBasic'] === undefined &&
+    tags['PreferredStockDividendsAndOtherAdjustments'] === undefined &&
+    tags['NetIncomeAttributableToParent'] !== undefined
   ) {
     tags['NetIncomeAvailableToCommonStockholdersBasic'] =
       tags['NetIncomeAttributableToParent']
@@ -496,8 +421,8 @@ export const load = (earning: Earnings) => {
 
   // Impute NetIncomeLoss
   if (
-    tags['NetIncomeLoss'] !== 0 &&
-    tags['IncomeFromContinuingOperationsAfterTax'] === 0
+    tags['NetIncomeLoss'] !== undefined &&
+    tags['IncomeFromContinuingOperationsAfterTax'] === undefined
   ) {
     tags['IncomeFromContinuingOperationsAfterTax'] =
       tags['NetIncomeLoss'] -
@@ -507,18 +432,18 @@ export const load = (earning: Earnings) => {
 
   // Impute: Net income attributable to parent if it does not exist
   if (
-    tags['NetIncomeAttributableToParent'] === 0 &&
-    tags['NetIncomeAttributableToNoncontrollingInterest'] === 0 &&
-    tags['NetIncomeLoss'] !== 0
+    tags['NetIncomeAttributableToParent'] === undefined &&
+    tags['NetIncomeAttributableToNoncontrollingInterest'] === undefined &&
+    tags['NetIncomeLoss'] !== undefined
   ) {
     tags['NetIncomeAttributableToParent'] = tags['NetIncomeLoss']
   }
 
   // Impute: PreferredStockDividendsAndOtherAdjustments
   if (
-    tags['PreferredStockDividendsAndOtherAdjustments'] === 0 &&
-    tags['NetIncomeAttributableToParent'] !== 0 &&
-    tags['NetIncomeAvailableToCommonStockholdersBasic'] !== 0
+    tags['PreferredStockDividendsAndOtherAdjustments'] === undefined &&
+    tags['NetIncomeAttributableToParent'] !== undefined &&
+    tags['NetIncomeAvailableToCommonStockholdersBasic'] !== undefined
   ) {
     tags['PreferredStockDividendsAndOtherAdjustments'] =
       tags['NetIncomeAttributableToParent'] -
@@ -527,18 +452,19 @@ export const load = (earning: Earnings) => {
 
   // Impute: comprehensive income
   if (
-    tags['ComprehensiveIncomeAttributableToParent'] === 0 &&
-    tags['ComprehensiveIncomeAttributableToNoncontrollingInterest'] === 0 &&
-    tags['ComprehensiveIncome'] === 0 &&
-    tags['OtherComprehensiveIncome'] === 0
+    tags['ComprehensiveIncomeAttributableToParent'] === undefined &&
+    tags['ComprehensiveIncomeAttributableToNoncontrollingInterest'] ===
+      undefined &&
+    tags['ComprehensiveIncome'] === undefined &&
+    tags['OtherComprehensiveIncome'] === undefined
   ) {
     tags['ComprehensiveIncome'] = tags['NetIncomeLoss']
   }
 
   // Impute: other comprehensive income
   if (
-    tags['ComprehensiveIncome'] !== 0 &&
-    tags['OtherComprehensiveIncome'] === 0
+    tags['ComprehensiveIncome'] !== undefined &&
+    tags['OtherComprehensiveIncome'] === undefined
   ) {
     tags['OtherComprehensiveIncome'] =
       tags['ComprehensiveIncome'] - tags['NetIncomeLoss']
@@ -546,9 +472,10 @@ export const load = (earning: Earnings) => {
 
   // Impute: comprehensive income attributable to parent if it does not exist
   if (
-    tags['ComprehensiveIncomeAttributableToParent'] === 0 &&
-    tags['ComprehensiveIncomeAttributableToNoncontrollingInterest'] === 0 &&
-    tags['ComprehensiveIncome'] !== 0
+    tags['ComprehensiveIncomeAttributableToParent'] === undefined &&
+    tags['ComprehensiveIncomeAttributableToNoncontrollingInterest'] ===
+      undefined &&
+    tags['ComprehensiveIncome'] !== undefined
   ) {
     tags['ComprehensiveIncomeAttributableToParent'] =
       tags['ComprehensiveIncome']
@@ -556,9 +483,9 @@ export const load = (earning: Earnings) => {
 
   // Impute: IncomeFromContinuingOperations*Before*Tax
   if (
-    tags['IncomeBeforeEquityMethodInvestments'] !== 0 &&
-    tags['IncomeFromEquityMethodInvestments'] !== 0 &&
-    tags['IncomeFromContinuingOperationsBeforeTax'] === 0
+    tags['IncomeBeforeEquityMethodInvestments'] !== undefined &&
+    tags['IncomeFromEquityMethodInvestments'] !== undefined &&
+    tags['IncomeFromContinuingOperationsBeforeTax'] === undefined
   ) {
     tags['IncomeFromContinuingOperationsBeforeTax'] =
       tags['IncomeBeforeEquityMethodInvestments'] +
@@ -567,8 +494,8 @@ export const load = (earning: Earnings) => {
 
   // Impute: IncomeFromContinuingOperations*Before*Tax2 (if income before tax is missing)
   if (
-    tags['IncomeFromContinuingOperationsBeforeTax'] === 0 &&
-    tags['IncomeFromContinuingOperationsAfterTax'] !== 0
+    tags['IncomeFromContinuingOperationsBeforeTax'] === undefined &&
+    tags['IncomeFromContinuingOperationsAfterTax'] !== undefined
   ) {
     tags['IncomeFromContinuingOperationsBeforeTax'] =
       tags['IncomeFromContinuingOperationsAfterTax'] +
@@ -577,10 +504,10 @@ export const load = (earning: Earnings) => {
 
   // Impute: IncomeFromContinuingOperations*After*Tax
   if (
-    tags['IncomeFromContinuingOperationsAfterTax'] === 0 &&
-    (tags['IncomeTaxExpenseBenefit'] !== 0 ||
-      tags['IncomeTaxExpenseBenefit'] === 0) &&
-    tags['IncomeFromContinuingOperationsBeforeTax'] !== 0
+    tags['IncomeFromContinuingOperationsAfterTax'] === undefined &&
+    (tags['IncomeTaxExpenseBenefit'] !== undefined ||
+      tags['IncomeTaxExpenseBenefit'] === undefined) &&
+    tags['IncomeFromContinuingOperationsBeforeTax'] !== undefined
   ) {
     tags['IncomeFromContinuingOperationsAfterTax'] =
       tags['IncomeFromContinuingOperationsBeforeTax'] -
@@ -589,66 +516,66 @@ export const load = (earning: Earnings) => {
 
   // Impute: GrossProfit
   if (
-    tags['GrossProfit'] === 0 &&
-    tags['Revenues'] !== 0 &&
-    tags['CostOfRevenue'] !== 0
+    tags['GrossProfit'] === undefined &&
+    tags['Revenues'] !== undefined &&
+    tags['CostOfRevenue'] !== undefined
   ) {
     tags['GrossProfit'] = tags['Revenues'] - tags['CostOfRevenue']
   }
 
   // Impute: GrossProfit
   if (
-    tags['GrossProfit'] === 0 &&
-    tags['Revenues'] !== 0 &&
-    tags['CostOfRevenue'] !== 0
+    tags['GrossProfit'] === undefined &&
+    tags['Revenues'] !== undefined &&
+    tags['CostOfRevenue'] !== undefined
   ) {
     tags['GrossProfit'] = tags['Revenues'] - tags['CostOfRevenue']
   }
 
   // Impute: Revenues
   if (
-    tags['GrossProfit'] !== 0 &&
-    tags['Revenues'] === 0 &&
-    tags['CostOfRevenue'] !== 0
+    tags['GrossProfit'] !== undefined &&
+    tags['Revenues'] === undefined &&
+    tags['CostOfRevenue'] !== undefined
   ) {
     tags['Revenues'] = tags['GrossProfit'] + tags['CostOfRevenue']
   }
 
   // Impute: CostOfRevenue
   if (
-    tags['GrossProfit'] !== 0 &&
-    tags['Revenues'] !== 0 &&
-    tags['CostOfRevenue'] === 0
+    tags['GrossProfit'] !== undefined &&
+    tags['Revenues'] !== undefined &&
+    tags['CostOfRevenue'] === undefined
   ) {
     tags['CostOfRevenue'] = tags['Revenues'] - tags['GrossProfit']
   }
 
   // Impute: CostsAndExpenses (would NEVER have costs and expenses if has gross profit, gross profit is multi-step and costs and expenses is single-step)
   if (
-    tags['GrossProfit'] === 0 &&
-    tags['CostsAndExpenses'] === 0 &&
-    tags['CostOfRevenue'] !== 0 &&
-    tags['OperatingExpenses'] !== 0
+    tags['GrossProfit'] === undefined &&
+    tags['CostsAndExpenses'] === undefined &&
+    tags['CostOfRevenue'] !== undefined &&
+    tags['OperatingExpenses'] !== undefined
   ) {
     tags['CostsAndExpenses'] = tags['CostOfRevenue'] + tags['OperatingExpenses']
   }
 
   // Impute: CostsAndExpenses based on existance of both costs of revenues and operating expenses
   if (
-    tags['CostsAndExpenses'] === 0 &&
-    tags['OperatingExpenses'] !== 0 &&
-    tags['CostOfRevenue'] !== 0
+    tags['CostsAndExpenses'] === undefined &&
+    tags['OperatingExpenses'] !== undefined &&
+    tags['CostOfRevenue'] !== undefined
   ) {
     tags['CostsAndExpenses'] = tags['CostOfRevenue'] + tags['OperatingExpenses']
   }
 
   // Impute: CostsAndExpenses
   if (
-    tags['GrossProfit'] === 0 &&
-    tags['CostsAndExpenses'] === 0 &&
-    tags['Revenues'] !== 0 &&
-    tags['OperatingIncomeLoss'] !== 0 &&
-    tags['OtherOperatingIncome'] !== 0
+    tags['GrossProfit'] === undefined &&
+    tags['CostsAndExpenses'] === undefined &&
+    tags['Revenues'] !== undefined &&
+    tags['OperatingIncomeLoss'] !== undefined &&
+    tags['OtherOperatingIncome'] !== undefined
   ) {
     tags['CostsAndExpenses'] =
       tags['Revenues'] -
@@ -658,29 +585,29 @@ export const load = (earning: Earnings) => {
 
   // Impute: OperatingExpenses based on existance of costs and expenses and cost of revenues
   if (
-    tags['CostOfRevenue'] !== 0 &&
-    tags['CostsAndExpenses'] !== 0 &&
-    tags['OperatingExpenses'] === 0
+    tags['CostOfRevenue'] !== undefined &&
+    tags['CostsAndExpenses'] !== undefined &&
+    tags['OperatingExpenses'] === undefined
   ) {
     tags['OperatingExpenses'] = tags['CostsAndExpenses'] - tags['CostOfRevenue']
   }
 
   // Impute: CostOfRevenues single-step method
   if (
-    tags['Revenues'] !== 0 &&
-    tags['GrossProfit'] === 0 &&
+    tags['Revenues'] !== undefined &&
+    tags['GrossProfit'] === undefined &&
     tags['Revenues'] - tags['CostsAndExpenses'] ==
       tags['OperatingIncomeLoss'] &&
-    tags['OperatingExpenses'] === 0 &&
-    tags['OtherOperatingIncome'] === 0
+    tags['OperatingExpenses'] === undefined &&
+    tags['OtherOperatingIncome'] === undefined
   ) {
     tags['CostOfRevenue'] = tags['CostsAndExpenses'] - tags['OperatingExpenses']
   }
 
   // Impute: IncomeBeforeEquityMethodInvestments
   if (
-    tags['IncomeBeforeEquityMethodInvestments'] === 0 &&
-    tags['IncomeFromContinuingOperationsBeforeTax'] !== 0
+    tags['IncomeBeforeEquityMethodInvestments'] === undefined &&
+    tags['IncomeFromContinuingOperationsBeforeTax'] !== undefined
   ) {
     tags['IncomeBeforeEquityMethodInvestments'] =
       tags['IncomeFromContinuingOperationsBeforeTax'] -
@@ -689,10 +616,10 @@ export const load = (earning: Earnings) => {
 
   // Impute: IncomeBeforeEquityMethodInvestments
   if (
-    tags['OperatingIncomeLoss'] !== 0 &&
-    tags['NonoperatingIncomeLoss'] !== 0 &&
-    tags['InterestAndDebtExpense'] == 0 &&
-    tags['IncomeBeforeEquityMethodInvestments'] !== 0
+    tags['OperatingIncomeLoss'] !== undefined &&
+    tags['NonoperatingIncomeLoss'] !== undefined &&
+    tags['InterestAndDebtExpense'] == undefined &&
+    tags['IncomeBeforeEquityMethodInvestments'] !== undefined
   ) {
     tags['InterestAndDebtExpense'] =
       tags['IncomeBeforeEquityMethodInvestments'] -
@@ -701,9 +628,9 @@ export const load = (earning: Earnings) => {
 
   // Impute: OtherOperatingIncome
   if (
-    tags['GrossProfit'] !== 0 &&
-    tags['OperatingExpenses'] !== 0 &&
-    tags['OperatingIncomeLoss'] !== 0
+    tags['GrossProfit'] !== undefined &&
+    tags['OperatingExpenses'] !== undefined &&
+    tags['OperatingIncomeLoss'] !== undefined
   ) {
     tags['OtherOperatingIncome'] =
       tags['OperatingIncomeLoss'] -
@@ -712,8 +639,8 @@ export const load = (earning: Earnings) => {
 
   // Move IncomeFromEquityMethodInvestments
   if (
-    tags['IncomeFromEquityMethodInvestments'] !== 0 &&
-    tags['IncomeBeforeEquityMethodInvestments'] !== 0 &&
+    tags['IncomeFromEquityMethodInvestments'] !== undefined &&
+    tags['IncomeBeforeEquityMethodInvestments'] !== undefined &&
     tags['IncomeBeforeEquityMethodInvestments'] !==
       tags['IncomeFromContinuingOperationsBeforeTax']
   ) {
@@ -727,8 +654,8 @@ export const load = (earning: Earnings) => {
   // DANGEROUS!!  May need to turn off. IS3 had 2085 PASSES WITHOUT this imputing. if it is higher,: keep the test
   // Impute: OperatingIncomeLoss
   if (
-    tags['OperatingIncomeLoss'] === 0 &&
-    tags['IncomeBeforeEquityMethodInvestments'] !== 0
+    tags['OperatingIncomeLoss'] === undefined &&
+    tags['IncomeBeforeEquityMethodInvestments'] !== undefined
   ) {
     tags['OperatingIncomeLoss'] =
       tags['IncomeBeforeEquityMethodInvestments'] +
@@ -744,199 +671,15 @@ export const load = (earning: Earnings) => {
 
   // NonoperatingIncomeLossPlusInterestAndDebtExpense
   if (
-    tags['NonoperatingIncomeLossPlusInterestAndDebtExpense'] === 0 &&
+    tags['NonoperatingIncomeLossPlusInterestAndDebtExpense'] === undefined &&
     tags[
       'NonoperatingIncomePlusInterestAndDebtExpensePlusIncomeFromEquityMethodInvestments'
-    ] !== 0
+    ] !== undefined
   ) {
     tags['NonoperatingIncomeLossPlusInterestAndDebtExpense'] =
       tags[
         'NonoperatingIncomePlusInterestAndDebtExpensePlusIncomeFromEquityMethodInvestments'
       ] - tags['IncomeFromEquityMethodInvestments']
-  }
-
-  var lngIS1 = tags['Revenues'] - tags['CostOfRevenue'] - tags['GrossProfit']
-  var lngIS2 =
-    tags['GrossProfit'] -
-    tags['OperatingExpenses'] +
-    tags['OtherOperatingIncome'] -
-    tags['OperatingIncomeLoss']
-  var lngIS3 =
-    tags['OperatingIncomeLoss'] +
-    tags['NonoperatingIncomeLossPlusInterestAndDebtExpense'] -
-    tags['IncomeBeforeEquityMethodInvestments']
-  var lngIS4 =
-    tags['IncomeBeforeEquityMethodInvestments'] +
-    tags['IncomeFromEquityMethodInvestments'] -
-    tags['IncomeFromContinuingOperationsBeforeTax']
-  var lngIS5 =
-    tags['IncomeFromContinuingOperationsBeforeTax'] -
-    tags['IncomeTaxExpenseBenefit'] -
-    tags['IncomeFromContinuingOperationsAfterTax']
-  var lngIS6 =
-    tags['IncomeFromContinuingOperationsAfterTax'] +
-    tags['IncomeFromDiscontinuedOperations'] +
-    tags['ExtraordaryItemsGainLoss'] -
-    tags['NetIncomeLoss']
-  var lngIS7 =
-    tags['NetIncomeAttributableToParent'] +
-    tags['NetIncomeAttributableToNoncontrollingInterest'] -
-    tags['NetIncomeLoss']
-  var lngIS8 =
-    tags['NetIncomeAttributableToParent'] -
-    tags['PreferredStockDividendsAndOtherAdjustments'] -
-    tags['NetIncomeAvailableToCommonStockholdersBasic']
-  var lngIS9 =
-    tags['ComprehensiveIncomeAttributableToParent'] +
-    tags['ComprehensiveIncomeAttributableToNoncontrollingInterest'] -
-    tags['ComprehensiveIncome']
-  var lngIS10 =
-    tags['NetIncomeLoss'] +
-    tags['OtherComprehensiveIncome'] -
-    tags['ComprehensiveIncome']
-  var lngIS11 =
-    tags['OperatingIncomeLoss'] -
-    (tags['Revenues'] - tags['CostsAndExpenses'] + tags['OtherOperatingIncome'])
-
-  if (lngIS1) {
-    console.log(
-      'IS1: GrossProfit(' +
-        tags['GrossProfit'] +
-        ') = Revenues(' +
-        tags['Revenues'] +
-        ') - CostOfRevenue(' +
-        tags['CostOfRevenue'] +
-        '): ' +
-        lngIS1
-    )
-  }
-  if (lngIS2) {
-    console.log(
-      'IS2: OperatingIncomeLoss(' +
-        tags['OperatingIncomeLoss'] +
-        ') = GrossProfit(' +
-        tags['GrossProfit'] +
-        ') - OperatingExpenses(' +
-        tags['OperatingExpenses'] +
-        ') + OtherOperatingIncome(' +
-        tags['OtherOperatingIncome'] +
-        '): ' +
-        lngIS2
-    )
-  }
-  if (lngIS3) {
-    console.log(
-      'IS3: IncomeBeforeEquityMethodInvestments(' +
-        tags['IncomeBeforeEquityMethodInvestments'] +
-        ') = OperatingIncomeLoss(' +
-        tags['OperatingIncomeLoss'] +
-        ') - NonoperatingIncomeLoss(' +
-        tags['NonoperatingIncomeLoss'] +
-        ')+ InterestAndDebtExpense(' +
-        tags['InterestAndDebtExpense'] +
-        '): ' +
-        lngIS3
-    )
-  }
-  if (lngIS4) {
-    console.log(
-      'IS4: IncomeFromContinuingOperationsBeforeTax(' +
-        tags['IncomeFromContinuingOperationsBeforeTax'] +
-        ') = IncomeBeforeEquityMethodInvestments(' +
-        tags['IncomeBeforeEquityMethodInvestments'] +
-        ') + IncomeFromEquityMethodInvestments(' +
-        tags['IncomeFromEquityMethodInvestments'] +
-        '): ' +
-        lngIS4
-    )
-  }
-  if (lngIS5) {
-    console.log(
-      'IS5: IncomeFromContinuingOperationsAfterTax(' +
-        tags['IncomeFromContinuingOperationsAfterTax'] +
-        ') = IncomeFromContinuingOperationsBeforeTax(' +
-        tags['IncomeFromContinuingOperationsBeforeTax'] +
-        ') - IncomeTaxExpenseBenefit(' +
-        tags['IncomeTaxExpenseBenefit'] +
-        '): ' +
-        lngIS5
-    )
-  }
-  if (lngIS6) {
-    console.log(
-      'IS6: NetIncomeLoss(' +
-        tags['NetIncomeLoss'] +
-        ') = IncomeFromContinuingOperationsAfterTax(' +
-        tags['IncomeFromContinuingOperationsAfterTax'] +
-        ') + IncomeFromDiscontinuedOperations(' +
-        tags['IncomeFromDiscontinuedOperations'] +
-        ') + ExtraordaryItemsGainLoss(' +
-        tags['ExtraordaryItemsGainLoss'] +
-        '): ' +
-        lngIS6
-    )
-  }
-  if (lngIS7) {
-    console.log(
-      'IS7: NetIncomeLoss(' +
-        tags['NetIncomeLoss'] +
-        ') = NetIncomeAttributableToParent(' +
-        tags['NetIncomeAttributableToParent'] +
-        ') + NetIncomeAttributableToNoncontrollingInterest(' +
-        tags['NetIncomeAttributableToNoncontrollingInterest'] +
-        '): ' +
-        lngIS7
-    )
-  }
-  if (lngIS8) {
-    console.log(
-      'IS8: NetIncomeAvailableToCommonStockholdersBasic(' +
-        tags['NetIncomeAvailableToCommonStockholdersBasic'] +
-        ') = NetIncomeAttributableToParent(' +
-        tags['NetIncomeAttributableToParent'] +
-        ') - PreferredStockDividendsAndOtherAdjustments(' +
-        tags['PreferredStockDividendsAndOtherAdjustments'] +
-        '): ' +
-        lngIS8
-    )
-  }
-  if (lngIS9) {
-    console.log(
-      'IS9: ComprehensiveIncome(' +
-        tags['ComprehensiveIncome'] +
-        ') = ComprehensiveIncomeAttributableToParent(' +
-        tags['ComprehensiveIncomeAttributableToParent'] +
-        ') + ComprehensiveIncomeAttributableToNoncontrollingInterest(' +
-        tags['ComprehensiveIncomeAttributableToNoncontrollingInterest'] +
-        '): ' +
-        lngIS9
-    )
-  }
-  if (lngIS10) {
-    console.log(
-      'IS10: ComprehensiveIncome(' +
-        tags['ComprehensiveIncome'] +
-        ') = NetIncomeLoss(' +
-        tags['NetIncomeLoss'] +
-        ') + OtherComprehensiveIncome(' +
-        tags['OtherComprehensiveIncome'] +
-        '): ' +
-        lngIS10
-    )
-  }
-  if (lngIS11) {
-    console.log(
-      'IS11: OperatingIncomeLoss(' +
-        tags['OperatingIncomeLoss'] +
-        ') = Revenues(' +
-        tags['Revenues'] +
-        ') - CostsAndExpenses(' +
-        tags['CostsAndExpenses'] +
-        ') + OtherOperatingIncome(' +
-        tags['OtherOperatingIncome'] +
-        '): ' +
-        lngIS11
-    )
   }
 
   // Cash flow statement
@@ -950,54 +693,54 @@ export const load = (earning: Earnings) => {
 
   // NetCashFlowsOperating
   tags['NetCashFlowsOperating'] =
-    earning.tags['NetCashProvidedByUsedInOperatingActivities'] || 0
+    earning.tags['NetCashProvidedByUsedInOperatingActivities'] || undefined
 
   // NetCashFlowsInvesting
   tags['NetCashFlowsInvesting'] =
-    earning.tags['NetCashProvidedByUsedInInvestingActivities'] || 0
+    earning.tags['NetCashProvidedByUsedInInvestingActivities'] || undefined
 
   // NetCashFlowsFinancing
   tags['NetCashFlowsFinancing'] =
-    earning.tags['NetCashProvidedByUsedInFinancingActivities'] || 0
+    earning.tags['NetCashProvidedByUsedInFinancingActivities'] || undefined
 
   // NetCashFlowsOperatingContinuing
   tags['NetCashFlowsOperatingContinuing'] =
     earning.tags[
       'NetCashProvidedByUsedInOperatingActivitiesContinuingOperations'
-    ] || 0
+    ] || undefined
 
   // NetCashFlowsInvestingContinuing
   tags['NetCashFlowsInvestingContinuing'] =
     earning.tags[
       'NetCashProvidedByUsedInInvestingActivitiesContinuingOperations'
-    ] || 0
+    ] || undefined
   // NetCashFlowsFinancingContinuing
   tags['NetCashFlowsFinancingContinuing'] =
     earning.tags[
       'NetCashProvidedByUsedInFinancingActivitiesContinuingOperations'
-    ] || 0
+    ] || undefined
 
   // NetCashFlowsOperatingDiscontinued
   tags['NetCashFlowsOperatingDiscontinued'] =
     earning.tags[
       'CashProvidedByUsedInOperatingActivitiesDiscontinuedOperations'
-    ] || 0
+    ] || undefined
 
   // NetCashFlowsInvestingDiscontinued
   tags['NetCashFlowsInvestingDiscontinued'] =
     earning.tags[
       'CashProvidedByUsedInInvestingActivitiesDiscontinuedOperations'
-    ] || 0
+    ] || undefined
 
   // NetCashFlowsFinancingDiscontinued
   tags['NetCashFlowsFinancingDiscontinued'] =
     earning.tags[
       'CashProvidedByUsedInFinancingActivitiesDiscontinuedOperations'
-    ] || 0
+    ] || undefined
 
   // NetCashFlowsDiscontinued
   tags['NetCashFlowsDiscontinued'] =
-    earning.tags['NetCashProvidedByUsedInDiscontinuedOperations'] || 0
+    earning.tags['NetCashProvidedByUsedInDiscontinuedOperations'] || undefined
 
   // ExchangeGainsLosses
   tags['ExchangeGainsLosses'] =
@@ -1012,7 +755,7 @@ export const load = (earning: Earnings) => {
 
   // Adjustments
   // Impute: total net cash flows discontinued if not reported
-  if (tags['NetCashFlowsDiscontinued'] === 0) {
+  if (tags['NetCashFlowsDiscontinued'] === undefined) {
     tags['NetCashFlowsDiscontinued'] =
       tags['NetCashFlowsOperatingDiscontinued'] +
       tags['NetCashFlowsInvestingDiscontinued'] +
@@ -1021,49 +764,49 @@ export const load = (earning: Earnings) => {
 
   // Impute: cash flows from continuing
   if (
-    tags['NetCashFlowsOperating'] !== 0 &&
-    tags['NetCashFlowsOperatingContinuing'] === 0
+    tags['NetCashFlowsOperating'] !== undefined &&
+    tags['NetCashFlowsOperatingContinuing'] === undefined
   ) {
     tags['NetCashFlowsOperatingContinuing'] =
       tags['NetCashFlowsOperating'] - tags['NetCashFlowsOperatingDiscontinued']
   }
 
   if (
-    tags['NetCashFlowsInvesting'] !== 0 &&
-    tags['NetCashFlowsInvestingContinuing'] === 0
+    tags['NetCashFlowsInvesting'] !== undefined &&
+    tags['NetCashFlowsInvestingContinuing'] === undefined
   ) {
     tags['NetCashFlowsInvestingContinuing'] =
       tags['NetCashFlowsInvesting'] - tags['NetCashFlowsInvestingDiscontinued']
   }
 
   if (
-    tags['NetCashFlowsFinancing'] !== 0 &&
-    tags['NetCashFlowsFinancingContinuing'] === 0
+    tags['NetCashFlowsFinancing'] !== undefined &&
+    tags['NetCashFlowsFinancingContinuing'] === undefined
   ) {
     tags['NetCashFlowsFinancingContinuing'] =
       tags['NetCashFlowsFinancing'] - tags['NetCashFlowsFinancingDiscontinued']
   }
 
   if (
-    tags['NetCashFlowsOperating'] === 0 &&
-    tags['NetCashFlowsOperatingContinuing'] !== 0 &&
-    tags['NetCashFlowsOperatingDiscontinued'] === 0
+    tags['NetCashFlowsOperating'] === undefined &&
+    tags['NetCashFlowsOperatingContinuing'] !== undefined &&
+    tags['NetCashFlowsOperatingDiscontinued'] === undefined
   ) {
     tags['NetCashFlowsOperating'] = tags['NetCashFlowsOperatingContinuing']
   }
 
   if (
-    tags['NetCashFlowsInvesting'] === 0 &&
-    tags['NetCashFlowsInvestingContinuing'] !== 0 &&
-    tags['NetCashFlowsInvestingDiscontinued'] === 0
+    tags['NetCashFlowsInvesting'] === undefined &&
+    tags['NetCashFlowsInvestingContinuing'] !== undefined &&
+    tags['NetCashFlowsInvestingDiscontinued'] === undefined
   ) {
     tags['NetCashFlowsInvesting'] = tags['NetCashFlowsInvestingContinuing']
   }
 
   if (
-    tags['NetCashFlowsFinancing'] === 0 &&
-    tags['NetCashFlowsFinancingContinuing'] !== 0 &&
-    tags['NetCashFlowsFinancingDiscontinued'] === 0
+    tags['NetCashFlowsFinancing'] === undefined &&
+    tags['NetCashFlowsFinancingContinuing'] !== undefined &&
+    tags['NetCashFlowsFinancingDiscontinued'] === undefined
   ) {
     tags['NetCashFlowsFinancing'] = tags['NetCashFlowsFinancingContinuing']
   }
@@ -1075,145 +818,15 @@ export const load = (earning: Earnings) => {
 
   // Impute: if net cash flow is missing,: this tries to figure out the value by adding up the detail
   if (
-    tags['NetCashFlow'] === 0 &&
-    (tags['NetCashFlowsOperating'] !== 0 ||
-      tags['NetCashFlowsInvesting'] !== 0 ||
-      tags['NetCashFlowsFinancing'] !== 0)
+    tags['NetCashFlow'] === undefined &&
+    (tags['NetCashFlowsOperating'] !== undefined ||
+      tags['NetCashFlowsInvesting'] !== undefined ||
+      tags['NetCashFlowsFinancing'] !== undefined)
   ) {
     tags['NetCashFlow'] =
       tags['NetCashFlowsOperating'] +
       tags['NetCashFlowsInvesting'] +
       tags['NetCashFlowsFinancing']
-  }
-
-  var lngCF1 =
-    tags['NetCashFlow'] -
-    (tags['NetCashFlowsOperating'] +
-      tags['NetCashFlowsInvesting'] +
-      tags['NetCashFlowsFinancing'] +
-      tags['ExchangeGainsLosses'])
-
-  if (
-    lngCF1 !== 0 &&
-    tags['NetCashFlow'] -
-      (tags['NetCashFlowsOperating'] +
-        tags['NetCashFlowsInvesting'] +
-        tags['NetCashFlowsFinancing'] +
-        tags['ExchangeGainsLosses']) ===
-      tags['ExchangeGainsLosses'] * -1
-  ) {
-    lngCF1 = 888888
-  }
-
-  // What is going on here is that 171 filers compute net cash flow differently than everyone else.
-  // What I am doing is marking these by setting the value of the test to a number 888888 which would never occur naturally, so that I can differentiate this from errors.
-  var lngCF2 =
-    tags['NetCashFlowsContinuing'] -
-    (tags['NetCashFlowsOperatingContinuing'] +
-      tags['NetCashFlowsInvestingContinuing'] +
-      tags['NetCashFlowsFinancingContinuing'])
-  var lngCF3 =
-    tags['NetCashFlowsDiscontinued'] -
-    (tags['NetCashFlowsOperatingDiscontinued'] +
-      tags['NetCashFlowsInvestingDiscontinued'] +
-      tags['NetCashFlowsFinancingDiscontinued'])
-  var lngCF4 =
-    tags['NetCashFlowsOperating'] -
-    (tags['NetCashFlowsOperatingContinuing'] +
-      tags['NetCashFlowsOperatingDiscontinued'])
-  var lngCF5 =
-    tags['NetCashFlowsInvesting'] -
-    (tags['NetCashFlowsInvestingContinuing'] +
-      tags['NetCashFlowsInvestingDiscontinued'])
-  var lngCF6 =
-    tags['NetCashFlowsFinancing'] -
-    (tags['NetCashFlowsFinancingContinuing'] +
-      tags['NetCashFlowsFinancingDiscontinued'])
-
-  if (lngCF1) {
-    console.log(
-      'CF1: NetCashFlow(' +
-        tags['NetCashFlow'] +
-        ') = (NetCashFlowsOperating(' +
-        tags['NetCashFlowsOperating'] +
-        ') + (NetCashFlowsInvesting(' +
-        tags['NetCashFlowsInvesting'] +
-        ') + (NetCashFlowsFinancing(' +
-        tags['NetCashFlowsFinancing'] +
-        ') + ExchangeGainsLosses(' +
-        tags['ExchangeGainsLosses'] +
-        '): ' +
-        lngCF1
-    )
-  }
-
-  if (lngCF2) {
-    console.log(
-      'CF2: NetCashFlowsContinuing(' +
-        tags['NetCashFlowsContinuing'] +
-        ') = NetCashFlowsOperatingContinuing(' +
-        tags['NetCashFlowsOperatingContinuing'] +
-        ') + NetCashFlowsInvestingContinuing(' +
-        tags['NetCashFlowsInvestingContinuing'] +
-        ') + NetCashFlowsFinancingContinuing(' +
-        tags['NetCashFlowsFinancingContinuing'] +
-        '): ' +
-        lngCF2
-    )
-  }
-
-  if (lngCF3) {
-    console.log(
-      'CF3: NetCashFlowsDiscontinued(' +
-        tags['NetCashFlowsDiscontinued'] +
-        ') = NetCashFlowsOperatingDiscontinued(' +
-        tags['NetCashFlowsOperatingDiscontinued'] +
-        ') + NetCashFlowsInvestingDiscontinued(' +
-        tags['NetCashFlowsInvestingDiscontinued'] +
-        ') + NetCashFlowsFinancingDiscontinued(' +
-        tags['NetCashFlowsFinancingDiscontinued'] +
-        '): ' +
-        lngCF3
-    )
-  }
-
-  if (lngCF4) {
-    console.log(
-      'CF4: NetCashFlowsOperating(' +
-        tags['NetCashFlowsOperating'] +
-        ') = NetCashFlowsOperatingContinuing(' +
-        tags['NetCashFlowsOperatingContinuing'] +
-        ') + NetCashFlowsOperatingDiscontinued(' +
-        tags['NetCashFlowsOperatingDiscontinued'] +
-        '): ' +
-        lngCF4
-    )
-  }
-
-  if (lngCF5) {
-    console.log(
-      'CF5: NetCashFlowsInvesting(' +
-        tags['NetCashFlowsInvesting'] +
-        ') = NetCashFlowsInvestingContinuing(' +
-        tags['NetCashFlowsInvestingContinuing'] +
-        ') + NetCashFlowsInvestingDiscontinued(' +
-        tags['NetCashFlowsInvestingDiscontinued'] +
-        '): ' +
-        lngCF5
-    )
-  }
-
-  if (lngCF6) {
-    console.log(
-      'CF6: NetCashFlowsFinancing(' +
-        tags['NetCashFlowsFinancing'] +
-        ') = NetCashFlowsFinancingContinuing(' +
-        tags['NetCashFlowsFinancingContinuing'] +
-        ') + NetCashFlowsFinancingDiscontinued(' +
-        tags['NetCashFlowsFinancingDiscontinued'] +
-        '): ' +
-        lngCF6
-    )
   }
 
   // Key ratios
