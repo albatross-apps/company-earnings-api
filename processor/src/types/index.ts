@@ -18,7 +18,7 @@ export interface Earnings {
 
 export interface EarningsMetric {
   ticker: string
-  metrics: Record<TagsKey, number>
+  metrics: Record<TagsKey, ReportPretty[]>
 }
 
 export interface EarningsScore {

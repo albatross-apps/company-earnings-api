@@ -78,12 +78,12 @@ export const getCompaniesPercentGrowthEveryQuarter = (
       })
       .filter((x) => x) as {
       key: string
-      value: number
-      reports: ReportPretty[]
+      value: ReportPretty[]
     }[]
-    const earningPercentGrowthMap = objArrToObj<string, number>(
+    const earningPercentGrowthMap = objArrToObj<string, ReportPretty[]>(
       earningPercentGrowth
     )
+
     return {
       ticker: earning.ticker,
       metrics: earningPercentGrowthMap,

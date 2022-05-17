@@ -168,7 +168,7 @@ export const calculateGrowthPercentPerQuarter = (
   if (!reports.length)
     return {
       key: tag as keyof TagsObject,
-      value: 0,
+      value: [],
     }
   const { percent, reportsData } = reports.reduce(
     (previous, currentReport) => {
@@ -200,12 +200,9 @@ export const calculateGrowthPercentPerQuarter = (
       reportsData: [] as ReportPretty[],
     }
   )
-  const averageScorePerQuarter = percent / reports.length
-
   return {
     key: tag as keyof TagsObject,
-    value: averageScorePerQuarter,
-    reports: reportsData,
+    value: reportsData,
   }
 }
 
