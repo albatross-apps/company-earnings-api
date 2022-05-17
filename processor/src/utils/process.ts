@@ -6,6 +6,7 @@ import {
   Earnings,
   TagData,
 } from '../types'
+import { load } from './parser'
 import {
   calculateGrowthPercentPerQuarter,
   mapTrim,
@@ -60,9 +61,12 @@ export const getCompaniesPercentGrowthEveryQuarter = (
   backYears?: number
 ) => {
   const allCompaniesPercentGrowth = earnings.map((earning) => {
-    const configuredTags = getConfiguredTags<TagData>(earning.tags)
-    const earningPercentGrowth = Object.entries(configuredTags).map(
-      ([tag, data]: [string, TagData]) => {
+    const allsTags = load(earning)
+    console.log(allsTags)
+
+    const earningPercentGrowth = Object.entries(allsTags).map(
+      ([tag, data]: [string, TagData | undefined]) => {
+        if (!data) return undefined
         const uniqueSortedReports = sortReports(data.units.USD, 'filed', 'end')
         let samePeriodReports = getReportsByPeriod(uniqueSortedReports)
         if (backYears) {
