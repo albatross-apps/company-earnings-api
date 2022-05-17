@@ -63,6 +63,8 @@ export const getCompaniesPercentGrowthEveryQuarter = (
 ) => {
   const allCompaniesPercentGrowth = earnings.map((earning) => {
     const allTags = load(earning)
+    allTags['Assets']?.units.USD.map((x) => console.log(x))
+
     const earningPercentGrowth = Object.entries(allTags)
       .map(([tag, data]: [string, TagData | undefined]) => {
         if (!data) return undefined
