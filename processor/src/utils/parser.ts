@@ -293,6 +293,7 @@ export const load = (earning: Earnings) => {
     earning.tags['OilAndGasRevenue'] ||
     earning.tags['FinancialServicesRevenue'] ||
     earning.tags['RegulatedAndUnregulatedOperatingRevenue'] ||
+    earning.tags['RevenueFromContractWithCustomerExcludingAssessedTax'] ||
     0
 
   // CostOfRevenue

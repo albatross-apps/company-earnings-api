@@ -28,9 +28,8 @@ const main = async () => {
       console.log('Saved To Cache')
     }
     const domesticEarnings = getDomesticCompanies(earnings)
-    const companiesPercentageGrowth = getCompaniesPercentGrowthEveryQuarter([
-      domesticEarnings[0],
-    ])
+    const companiesPercentageGrowth =
+      getCompaniesPercentGrowthEveryQuarter(domesticEarnings)
     //console.log(companiesPercentageGrowth)
 
     console.log('')

@@ -6,6 +6,7 @@ import {
   Earnings,
   TagData,
   Report,
+  ReportPretty,
 } from '../types'
 import { load } from './parser'
 import {
@@ -61,27 +62,27 @@ export const getCompaniesPercentGrowthEveryQuarter = (
   backYears?: number
 ) => {
   const allCompaniesPercentGrowth = earnings.map((earning) => {
-    const allsTags = load(earning)
-    const earningPercentGrowth = Object.entries(allsTags)
+    console.log(earning.ticker)
+
+    const allTags = load(earning)
+    const earningPercentGrowth = Object.entries(allTags)
       .map(([tag, data]: [string, TagData | undefined]) => {
         if (!data) return undefined
         const uniqueSortedReports = unique<Report>(
-          sortReports(data.units.USD, 'end', 'filed'),
+          sortReports(data.units.USD, 'end'),
           (report) => report.fy + report.fp
         )
-        let samePeriodReports = getReportsByPeriod(uniqueSortedReports, 'Q1')
+        let samePeriodReports = getReportsByPeriod(uniqueSortedReports, 'FY')
         if (backYears) {
           samePeriodReports = samePeriodReports.slice(0, backYears + 1)
         }
         return calculateGrowthPercentPerQuarter(tag, samePeriodReports)
       })
-      .filter((x) => x)
-    earningPercentGrowth.forEach((x) => {
-      console.log(x?.key)
-      x?.reports?.forEach((y) => {
-        console.log(y)
-      })
-    })
+      .filter((x) => x) as {
+      key: string
+      value: number
+      reports: ReportPretty[]
+    }[]
     const earningPercentGrowthMap = objArrToObj<string, number>(
       earningPercentGrowth
     )

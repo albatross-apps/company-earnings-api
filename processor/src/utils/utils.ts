@@ -46,15 +46,9 @@ export const getChunks = (a: unknown[], size: number) =>
     a.slice(i * size, i * size + size)
   )
 
-export const sortReports = (
-  reports: Report[],
-  field1: keyof Report,
-  field2: keyof Report
-) => {
+export const sortReports = (reports: Report[], field1: keyof Report) => {
   return reports.sort(
-    (a, b) =>
-      new Date(a[field1]).getTime() - new Date(b[field1]).getTime() ||
-      new Date(a[field2]).getTime() - new Date(b[field2]).getTime()
+    (a, b) => new Date(a[field1]).getTime() - new Date(b[field1]).getTime()
   )
 }
 
