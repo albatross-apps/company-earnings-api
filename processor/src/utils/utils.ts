@@ -20,9 +20,11 @@ export const toPercentFormat = (val: number) => {
   return `${val.toFixed(2)}%`
 }
 
-export const unique = (reports: Report[], value: keyof Report) => [
-  ...new Map(reports.map((item) => [item[value], item])).values(),
-]
+export const unique = <T extends unknown>(arr: T[], func: (v: T) => string) => {
+  const result = new Map<string, T>()
+  arr.forEach((x) => result.set(func(x), x))
+  return [...result.values()]
+}
 
 export const mapTrim = <T extends unknown, TR extends unknown>(
   arr: T[],
@@ -167,12 +169,6 @@ export const calculateGrowthPercentPerQuarter = (
     }
   const { percent, reportsData } = reports.reduce(
     (previous, currentReport) => {
-      // console.log({ curr: currentReport, prev: previous.previousReport })
-      // console.log(
-      //   previous.previousReport &&
-      //     calcPercentGrowth(previous.previousReport, currentReport)
-      // )
-
       const percentGrowth = previous.previousReport
         ? calcPercentGrowth(previous.previousReport, currentReport)
         : undefined
