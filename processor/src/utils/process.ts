@@ -62,8 +62,6 @@ export const getCompaniesPercentGrowthEveryQuarter = (
   backYears?: number
 ) => {
   const allCompaniesPercentGrowth = earnings.map((earning) => {
-    console.log(earning.ticker)
-
     const allTags = load(earning)
     const earningPercentGrowth = Object.entries(allTags)
       .map(([tag, data]: [string, TagData | undefined]) => {
@@ -72,7 +70,7 @@ export const getCompaniesPercentGrowthEveryQuarter = (
           sortReports(data.units.USD, 'end'),
           (report) => report.fy + report.fp
         )
-        let samePeriodReports = getReportsByPeriod(uniqueSortedReports, 'FY')
+        let samePeriodReports = getReportsByPeriod(uniqueSortedReports)
         if (backYears) {
           samePeriodReports = samePeriodReports.slice(0, backYears + 1)
         }

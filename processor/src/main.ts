@@ -30,7 +30,7 @@ const main = async () => {
     const domesticEarnings = getDomesticCompanies(earnings)
     const companiesPercentageGrowth =
       getCompaniesPercentGrowthEveryQuarter(domesticEarnings)
-    //console.log(companiesPercentageGrowth)
+    console.log(companiesPercentageGrowth)
 
     console.log('')
     const normalizedScores = normalizeValues(companiesPercentageGrowth)

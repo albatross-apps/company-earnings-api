@@ -110,7 +110,7 @@ export const getReportsByPeriod = (
   period?: 'Q1' | 'Q2' | 'Q3' | 'FY'
 ) => {
   const mostRecentReport = reports[reports.length - 1]
-  if (!period && mostRecentReport.filed !== config.date) return []
+  if (!period && !mostRecentReport) return []
   const reportPeriod = period || mostRecentReport.fp
   const newReports = reports.filter(
     (report) =>
