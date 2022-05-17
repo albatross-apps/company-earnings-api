@@ -10,7 +10,7 @@ import {
 } from '../types'
 //@ts-ignore
 import CC from 'currency-converter-lt'
-import { number, re } from 'mathjs'
+import { number, re, string } from 'mathjs'
 
 export const errorsCache = [] as unknown[]
 
@@ -23,6 +23,15 @@ export const toPercentFormat = (val: number) => {
 export const unique = (reports: Report[], value: keyof Report) => [
   ...new Map(reports.map((item) => [item[value], item])).values(),
 ]
+
+export const unique2 = <T extends unknown>(
+  arr: T[],
+  func: (v: T) => string
+) => {
+  const result = new Map<string, T>()
+  arr.forEach((x) => result.set(func(x), x))
+  return [...result.values()]
+}
 
 export const mapTrim = <T extends unknown, TR extends unknown>(
   arr: T[],

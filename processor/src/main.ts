@@ -13,8 +13,11 @@ import {
 } from './utils/process'
 import { Earnings } from './types'
 import { objArrToObj, errorsCache, getDomesticCompanies } from './utils'
+import Redis from 'ioredis'
+require('dotenv').config()
 
 const main = async () => {
+  const redis = new Redis(process.env.REDIS_URL)
   try {
     const filePath = `${config.filePath}/${config.date}.json`
     let earnings: Earnings[]
@@ -54,6 +57,7 @@ const main = async () => {
 
     const dataPath = `${config.filePath}/data.json`
     setCache(dataPath, data)
+    await redis.set('data', JSON.stringify(data))
     const combined = {
       ...scores.map((x) => {
         const growthObj = companiesPercentageGrowth.find(
@@ -83,7 +87,8 @@ const main = async () => {
     console.log('Finished!')
     console.log('Errors:')
     console.log('')
-    console.log(errorsCache ?? 'None')
+    console.log(errorsCache?.length ? errorsCache : 'None')
+    redis.quit()
   }
 }
 

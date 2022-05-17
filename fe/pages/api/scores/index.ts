@@ -1,13 +1,13 @@
 import { NextApiRequest, NextApiResponse } from 'next'
-import fs from 'fs'
-const fsP = fs.promises
+import Redis from 'ioredis'
+
+const redis = new Redis(process.env.REDIS_URL)
 
 const handler = async (_req: NextApiRequest, res: NextApiResponse) => {
   try {
-    const data = await fsP.readFile('../processor/cache/data.json')
+    const data = await redis.get('data')
 
-    const dataJson = JSON.parse(data.toString())
-    console.log(dataJson)
+    const dataJson = JSON.parse(data)
     if (!Array.isArray(dataJson)) {
       throw new Error('Cannot find data')
     }
