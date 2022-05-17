@@ -47,13 +47,13 @@ export interface Report {
 }
 
 export interface ReportPretty {
-  val: string
+  val: number
   form: string
   fy: number
   fp: string
   start: string
   end: string
-  percentGrowthYoY: string | undefined
+  percentGrowthYoY: number | undefined
 }
 
 export interface CompanyProfile {

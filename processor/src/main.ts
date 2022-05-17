@@ -35,48 +35,28 @@ const main = async () => {
       getCompaniesPercentGrowthEveryQuarter(domesticEarnings)
 
     console.log('')
-    const normalizedScores = normalizeValues(companiesPercentageGrowth)
-    const scores = getAllScores(normalizedScores)
-      .sort((a, b) => b.score - a.score)
-      .map((x) => ({ ...x, score: x.score * 100 }))
-    const data = scores.map((x) => {
-      const growthObj = companiesPercentageGrowth.find(
-        (g) => g.ticker === x.ticker
-      )?.metrics!
-      const normalizedObj = normalizedScores.find((g) => g.ticker === x.ticker)
-        ?.metrics!
+    //const normalizedScores = normalizeValues(companiesPercentageGrowth)
+    // const scores = getAllScores(normalizedScores)
+    //   .sort((a, b) => b.score - a.score)
+    //   .map((x) => ({ ...x, score: x.score * 100 }))
+    // const data = scores.map((x) => {
+    //   const growthObj = companiesPercentageGrowth.find(
+    //     (g) => g.ticker === x.ticker
+    //   )?.metrics!
+    //   const normalizedObj = normalizedScores.find((g) => g.ticker === x.ticker)
+    //     ?.metrics!
 
-      return {
-        ticker: x.ticker,
-        score: Number(x.score.toFixed(0)),
-        growths: growthObj,
-        normalized: normalizedObj,
-      }
-    })
+    //   return {
+    //     ticker: x.ticker,
+    //     score: Number(x.score.toFixed(0)),
+    //     growths: growthObj,
+    //     normalized: normalizedObj,
+    //   }
+    // })
 
-    const dataPath = `${config.filePath}/data.json`
-    setCache(dataPath, data)
-    await redis.set('data', JSON.stringify(data))
-    const combined = {
-      ...scores.map((x) => {
-        const growthObj = companiesPercentageGrowth.find(
-          (g) => g.ticker === x.ticker
-        )?.metrics!
+    await redis.set('data', JSON.stringify(companiesPercentageGrowth))
 
-        const growthShort = Object.entries(growthObj).map(([key, value]) => ({
-          key: key.replace(/[a-z]/g, ''),
-          value: Number(value.toFixed(0)),
-        }))
-        return {
-          ticker: x.ticker,
-          score: Number(x.score.toFixed(0)),
-          ...objArrToObj(growthShort),
-        }
-      }),
-    }
-    console.log('')
-    console.log('Scores')
-    console.table(combined)
+    console.log('Saved to Redis')
   } catch (e) {
     console.log('')
     console.log('Something went wrong')

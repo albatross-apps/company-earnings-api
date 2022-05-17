@@ -53,7 +53,7 @@ export interface Earnings {
 
 export interface EarningsMetric {
   ticker: string
-  metrics: Record<TagsKey, number>
+  metrics: Record<TagsKey, ReportPretty[]>
 }
 
 export interface EarningsScore {
@@ -82,13 +82,13 @@ export interface Report {
 }
 
 export interface ReportPretty {
-  val: string
+  val: number
   form: string
   fy: number
   fp: string
   start: string
   end: string
-  percentGrowthYoY: string | undefined
+  percentGrowthYoY: number | undefined
 }
 
 export interface CompanyProfile {

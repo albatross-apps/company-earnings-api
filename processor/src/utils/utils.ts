@@ -181,10 +181,8 @@ export const calculateGrowthPercentPerQuarter = (
         fy: currentReport.fy,
         start: currentReport.start,
         end: currentReport.end,
-        val: currencyFormatter().format(currentReport.val),
-        percentGrowthYoY: percentGrowth
-          ? toPercentFormat(percentGrowth)
-          : undefined,
+        val: currentReport.val,
+        percentGrowthYoY: percentGrowth,
       })
       return {
         percent: percentGrowth

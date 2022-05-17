@@ -1,19 +1,35 @@
 import Layout from '../components/Layout'
 import useSWR from 'swr'
-import { ScoresData } from '../interfaces'
+import { EarningsMetric, ReportPretty, ScoresData } from '../interfaces'
 import {
   Container,
   Grid,
+  Loading,
   Table,
   useAsyncList,
   useCollator,
 } from '@nextui-org/react'
+import { objArrToObj } from '../utils'
 
 const IndexPage = () => {
   const load = async ({ signal }) => {
     const resp = await fetch('/api/scores')
+    const data = (await resp.json()) as EarningsMetric[]
+    console.log({ data })
     return {
-      items: (await resp.json()) as ScoresData[],
+      items: data.map((d) => {
+        const value = Object.entries(d.metrics).map(
+          ([key, report]: [string, ReportPretty[]]) => {
+            return {
+              key,
+              value: report?.length
+                ? report[report.length - 1].percentGrowthYoY
+                : 0,
+            }
+          }
+        )
+        return { ticker: d.ticker, ...objArrToObj(value) }
+      }),
     }
   }
   const collator = useCollator({ numeric: true })
@@ -35,24 +51,29 @@ const IndexPage = () => {
 
   const list = useAsyncList({ load, sort })
 
+  if (list.isLoading) return <Loading type="points" />
+  console.log({ list: list.items })
+
+  const columns = list.items?.length
+    ? Object.keys(list.items).map((item) => ({
+        key: item,
+      }))
+    : [{ key: 'none' }]
+
   return (
     <Container fluid>
       <Grid.Container gap={2} justify="center">
         <Grid xs>
           <Table
-            aria-label="Example static collection table"
             css={{ minWidth: '100%', height: 'auto' }}
             sortDescriptor={list.sortDescriptor}
             onSortChange={list.sort}
             width="100%"
           >
-            <Table.Header>
-              <Table.Column key="ticker" allowsSorting>
-                Ticker
-              </Table.Column>
-              <Table.Column key="score" allowsSorting>
-                Score
-              </Table.Column>
+            <Table.Header columns={columns}>
+              {(column) => (
+                <Table.Column key={column.key}>{column.key}</Table.Column>
+              )}
             </Table.Header>
             <Table.Body items={list.items} loadingState={list.loadingState}>
               {(item) => (
