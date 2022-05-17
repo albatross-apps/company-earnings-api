@@ -16,10 +16,6 @@ export const errorsCache = [] as unknown[]
 
 export const growthValues = [] as unknown[]
 
-export const toPercentFormat = (val: number) => {
-  return `${val.toFixed(2)}%`
-}
-
 export const unique = <T extends unknown>(arr: T[], func: (v: T) => string) => {
   const result = new Map<string, T>()
   arr.forEach((x) => result.set(func(x), x))

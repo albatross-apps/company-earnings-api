@@ -10,3 +10,13 @@ export const objArrToObj = <T extends string, TV extends unknown>(
   })
   return result
 }
+
+export const toPercentFormat = (val: number) => {
+  return `${val.toFixed(2)}%`
+}
+
+export const currencyFormatter = (currency: string = 'USD') =>
+  new Intl.NumberFormat('en-US', {
+    style: 'currency',
+    currency,
+  })

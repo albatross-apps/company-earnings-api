@@ -91,6 +91,16 @@ export interface ReportPretty {
   percentGrowthYoY: number | undefined
 }
 
+export interface ReportOutput {
+  val: number
+  form: string
+  fy: number
+  fp: string
+  start: string
+  end: string
+  percentGrowthYoY: string | undefined
+}
+
 export interface CompanyProfile {
   lastYearRptDt: string
   lastYearEPS: string

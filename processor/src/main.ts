@@ -4,13 +4,8 @@ import {
   hasCache,
   getCachedEarnings,
   setCachedEarnings,
-  setCache,
 } from './data/dataCache'
-import {
-  getCompaniesPercentGrowthEveryQuarter,
-  normalizeValues,
-  getAllScores,
-} from './utils/process'
+import { getCompaniesPercentGrowthEveryQuarter } from './utils/process'
 import { Earnings } from './types'
 import { objArrToObj, errorsCache, getDomesticCompanies } from './utils'
 import Redis from 'ioredis'

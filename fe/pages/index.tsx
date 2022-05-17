@@ -9,7 +9,7 @@ import {
   useAsyncList,
   useCollator,
 } from '@nextui-org/react'
-import { objArrToObj } from '../utils'
+import { objArrToObj, toPercentFormat } from '../utils'
 
 const IndexPage = () => {
   const load = async ({ signal }) => {
@@ -55,7 +55,7 @@ const IndexPage = () => {
   console.log({ list: list.items })
 
   const columns = list.items?.length
-    ? Object.keys(list.items).map((item) => ({
+    ? Object.keys(list.items[0]).map((item) => ({
         key: item,
       }))
     : [{ key: 'none' }]
@@ -78,7 +78,17 @@ const IndexPage = () => {
             <Table.Body items={list.items} loadingState={list.loadingState}>
               {(item) => (
                 <Table.Row key={item.ticker}>
-                  {(columnKey) => <Table.Cell>{item[columnKey]}</Table.Cell>}
+                  {(columnKey) => {
+                    if (columnKey === 'ticker')
+                      return <Table.Cell>{item[columnKey]}</Table.Cell>
+                    return (
+                      <Table.Cell>
+                        {!!item[columnKey]
+                          ? toPercentFormat(item[columnKey])
+                          : '0%'}
+                      </Table.Cell>
+                    )
+                  }}
                 </Table.Row>
               )}
             </Table.Body>

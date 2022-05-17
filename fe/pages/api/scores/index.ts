@@ -1,14 +1,12 @@
 import { NextApiRequest, NextApiResponse } from 'next'
 import Redis from 'ioredis'
 
-const redis = new Redis(process.env.REDIS_URL)
-
 const handler = async (_req: NextApiRequest, res: NextApiResponse) => {
+  const redis = new Redis(process.env.REDIS_URL)
   try {
     console.log('here')
     const data = await redis.get('data')
 
-    console.log({ data })
     const dataJson = JSON.parse(data)
     if (!Array.isArray(dataJson)) {
       throw new Error('Cannot find data')
@@ -17,6 +15,8 @@ const handler = async (_req: NextApiRequest, res: NextApiResponse) => {
     res.status(200).json(dataJson)
   } catch (err: any) {
     res.status(500).json({ statusCode: 500, message: err.message })
+  } finally {
+    redis.quit()
   }
 }
 
