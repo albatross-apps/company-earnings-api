@@ -20,9 +20,11 @@ export const toPercentFormat = (val: number) => {
   return `${val.toFixed(2)}%`
 }
 
-export const unique = (reports: Report[], value: keyof Report) => [
-  ...new Map(reports.map((item) => [item[value], item])).values(),
-]
+export const unique = <T extends unknown>(arr: T[], func: (v: T) => string) => {
+  const result = new Map<string, T>()
+  arr.forEach((x) => result.set(func(x), x))
+  return [...result.values()]
+}
 
 export const unique2 = <T extends unknown>(
   arr: T[],
@@ -53,15 +55,9 @@ export const getChunks = (a: unknown[], size: number) =>
     a.slice(i * size, i * size + size)
   )
 
-export const sortReports = (
-  reports: Report[],
-  field1: keyof Report,
-  field2: keyof Report
-) => {
+export const sortReports = (reports: Report[], field1: keyof Report) => {
   return reports.sort(
-    (a, b) =>
-      new Date(a[field1]).getTime() - new Date(b[field1]).getTime() ||
-      new Date(a[field2]).getTime() - new Date(b[field2]).getTime()
+    (a, b) => new Date(a[field1]).getTime() - new Date(b[field1]).getTime()
   )
 }
 
@@ -123,7 +119,7 @@ export const getReportsByPeriod = (
   period?: 'Q1' | 'Q2' | 'Q3' | 'FY'
 ) => {
   const mostRecentReport = reports[reports.length - 1]
-  if (!period && mostRecentReport.filed !== config.date) return []
+  if (!period && !mostRecentReport) return []
   const reportPeriod = period || mostRecentReport.fp
   const newReports = reports.filter(
     (report) =>
@@ -176,12 +172,6 @@ export const calculateGrowthPercentPerQuarter = (
     }
   const { percent, reportsData } = reports.reduce(
     (previous, currentReport) => {
-      // console.log({ curr: currentReport, prev: previous.previousReport })
-      // console.log(
-      //   previous.previousReport &&
-      //     calcPercentGrowth(previous.previousReport, currentReport)
-      // )
-
       const percentGrowth = previous.previousReport
         ? calcPercentGrowth(previous.previousReport, currentReport)
         : undefined
