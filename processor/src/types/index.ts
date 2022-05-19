@@ -7,6 +7,8 @@ export interface ReportResp {
   }
 }
 
+export type OperationType = '+' | '-' | '/' | '*'
+
 export type TagsObject = Record<string, TagData>
 
 export type TagsKey = Extract<keyof TagsObject, string>

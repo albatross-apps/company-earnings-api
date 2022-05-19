@@ -1,9 +1,44 @@
-import { Earnings, Report, TagData } from '../types'
+import { Earnings, OperationType, Report, TagData } from '../types'
+
+const calcOperation = (num: number, num2: number, operation: OperationType) => {
+  switch (operation) {
+    case '+':
+      return num + num2
+    case '-':
+      return num - num2
+    case '/':
+      return num / num2
+    case '*':
+      return num * num2
+    default:
+      return undefined
+  }
+}
+
+const calcNumberToTag = (
+  num: number,
+  tag: TagData,
+  operation: OperationType
+) => {
+  const units = tag.units.USD.map((report) => {
+    return {
+      ...report,
+      val: calcOperation(num, report.val, operation),
+    } as Report
+  })
+  return {
+    ...tag,
+    units: {
+      ...tag.units,
+      USD: units,
+    },
+  } as TagData
+}
 
 const getCalculateTag = (
   tag1: TagData | undefined,
   tag2: TagData | undefined,
-  operation: '+' | '-'
+  operation: OperationType
 ) => {
   if (!tag1?.units?.USD || !tag2?.units?.USD) return undefined
   const reports1 = tag1.units.USD
@@ -14,12 +49,10 @@ const getCalculateTag = (
         (r2) => r2.end === r1.end && r1.form === r2.form
       )
       if (otherReport) {
+        let val = 0
         return {
           ...r1,
-          val:
-            operation === '+'
-              ? r1.val + otherReport.val
-              : r1.val - otherReport.val,
+          val,
         } as Report
       }
       return undefined
@@ -987,18 +1020,58 @@ export const load = (earning: Earnings) => {
     )
   }
 
+  const NetIncomeLossRevenues = getCalculateTag(
+    tags['NetIncomeLoss'],
+    tags['Revenues'],
+    '/'
+  )
+  const AssetsEquity = getCalculateTag(tags['Assets'], tags['Equity'], '-')
+  const RevenuesAssets = getCalculateTag(tags['Revenues'], tags['Assets'], '/')
   // Key ratios
-  // tags['SGR'] =
-  //   ((tags['NetIncomeLoss'] / tags['Revenues']) *
-  //     (1 + (tags['Assets'] - tags['Equity']) / tags['Equity'])) /
-  //     (1 / (tags['Revenues'] / tags['Assets']) -
-  //       (tags['NetIncomeLoss'] / tags['Revenues']) *
-  //         (1 + (tags['Assets'] - tags['Equity']) / tags['Equity'])) || null
+  if (NetIncomeLossRevenues && AssetsEquity && RevenuesAssets) {
+    const AssetsEquityEquity = getCalculateTag(
+      AssetsEquity,
+      tags['Equity'],
+      '/'
+    )
+    if (AssetsEquityEquity) {
+      const AddOneToAssetsEquityEquity = calcNumberToTag(
+        1,
+        AssetsEquityEquity,
+        '+'
+      )
+      const DivideOneToRevenuesAssets = calcNumberToTag(1, RevenuesAssets, '/')
+      if (
+        AssetsEquityEquity &&
+        AddOneToAssetsEquityEquity &&
+        DivideOneToRevenuesAssets
+      ) {
+        tags['SGR'] =
+          getCalculateTag(
+            getCalculateTag(
+              NetIncomeLossRevenues,
+              AddOneToAssetsEquityEquity!,
+              '*'
+            ),
+            getCalculateTag(
+              DivideOneToRevenuesAssets,
+              getCalculateTag(
+                NetIncomeLossRevenues,
+                AddOneToAssetsEquityEquity!,
+                '*'
+              ),
+              '-'
+            ),
+            '/'
+          ) || undefined
+      }
+    }
+  }
 
-  // tags['ROA'] = tags['NetIncomeLoss'] / tags['Assets']
+  tags['ROA'] = getCalculateTag(tags['NetIncomeLoss'], tags['Assets'], '/')
 
-  // tags['ROE'] = tags['NetIncomeLoss'] / tags['Equity']
+  tags['ROE'] = getCalculateTag(tags['NetIncomeLoss'], tags['Equity'], '/')
 
-  // tags['ROS'] = tags['NetIncomeLoss'] / tags['Revenues']
+  tags['ROS'] = getCalculateTag(tags['NetIncomeLoss'], tags['Revenues'], '/')
   return tags
 }

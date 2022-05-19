@@ -57,10 +57,7 @@ import {
  * @returns the score for every companies.
  */
 
-export const getCompaniesPercentGrowthEveryQuarter = (
-  earnings: Earnings[],
-  backYears?: number
-) => {
+export const getCompaniesPercentGrowthEveryQuarter = (earnings: Earnings[]) => {
   const allCompaniesPercentGrowth = earnings.map((earning) => {
     const allTags = load(earning)
     allTags['Assets']?.units.USD.map((x) => console.log(x))
@@ -72,10 +69,7 @@ export const getCompaniesPercentGrowthEveryQuarter = (
           sortReports(data.units.USD, 'end'),
           (report) => report.fy + report.fp
         )
-        let samePeriodReports = getReportsByPeriod(uniqueSortedReports)
-        if (backYears) {
-          samePeriodReports = samePeriodReports.slice(0, backYears + 1)
-        }
+        const samePeriodReports = getReportsByPeriod(uniqueSortedReports)
         return calculateGrowthPercentPerQuarter(tag, samePeriodReports)
       })
       .filter((x) => x) as {
