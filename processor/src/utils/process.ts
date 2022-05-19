@@ -2,7 +2,6 @@ import { config } from '../config/config'
 import {
   EarningsMetric,
   TagsKey,
-  TagsObject,
   Earnings,
   TagData,
   Report,
@@ -11,8 +10,6 @@ import {
 import { load } from './parser'
 import {
   calculateGrowthPercentPerQuarter,
-  mapTrim,
-  normalize,
   sumFunc,
   sortReports,
   objArrToObj,
@@ -52,16 +49,12 @@ import {
  * Takes a list of earnings and gets the percent growth per quarter.
  *
  * @param earnings
- * @param backYears optional years you want to go back,
- * providing no value will default to all.
  * @returns the score for every companies.
  */
 
 export const getCompaniesPercentGrowthEveryQuarter = (earnings: Earnings[]) => {
   const allCompaniesPercentGrowth = earnings.map((earning) => {
     const allTags = load(earning)
-    allTags['Assets']?.units.USD.map((x) => console.log(x))
-
     const earningPercentGrowth = Object.entries(allTags)
       .map(([tag, data]: [string, TagData | undefined]) => {
         if (!data) return undefined
@@ -69,7 +62,7 @@ export const getCompaniesPercentGrowthEveryQuarter = (earnings: Earnings[]) => {
           sortReports(data.units.USD, 'end'),
           (report) => report.fy + report.fp
         )
-        const samePeriodReports = getReportsByPeriod(uniqueSortedReports)
+        const samePeriodReports = getReportsByPeriod(uniqueSortedReports, 'Q1')
         return calculateGrowthPercentPerQuarter(tag, samePeriodReports)
       })
       .filter((x) => x) as {

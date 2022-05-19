@@ -144,6 +144,7 @@ export const objArrToObj = <T extends string, TV extends unknown>(
   arr.forEach((item) => {
     result[item.key] = item.value
   })
+  
   return result
 }
 
