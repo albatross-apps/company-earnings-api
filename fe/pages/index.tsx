@@ -2,10 +2,12 @@ import Layout from '../components/Layout'
 import useSWR from 'swr'
 import { EarningsMetric, ReportPretty, ScoresData } from '../interfaces'
 import {
+  Card,
   Container,
   Grid,
   Loading,
   Table,
+  Text,
   useAsyncList,
   useCollator,
 } from '@nextui-org/react'
@@ -71,49 +73,28 @@ const IndexPage = () => {
       }))
     : [{ key: 'none' }]
 
-  if (list.isLoading) return <Loading type="points" />
   return (
     <Container fluid>
       <Grid.Container gap={2} justify="center">
-        {d && <TagGraph reports={d[0]} />}
-        <Grid xs>
-          {/* <Table
-            css={{ minWidth: '100%', height: 'auto' }}
-            sortDescriptor={list.sortDescriptor}
-            onSortChange={list.sort}
-            width="100%"
-          >
-            <Table.Header columns={columns}>
-              {(column) => (
-                <Table.Column key={column.key}>{column.key}</Table.Column>
-              )}
-            </Table.Header>
-            <Table.Body items={list.items} loadingState={list.loadingState}>
-              {(item) => (
-                <Table.Row key={item.ticker}>
-                  {(columnKey) => {
-                    if (columnKey === 'ticker')
-                      return <Table.Cell>{item[columnKey]}</Table.Cell>
-                    return (
-                      <Table.Cell>
-                        {!!item[columnKey]
-                          ? toPercentFormat(item[columnKey])
-                          : '0%'}
-                      </Table.Cell>
-                    )
-                  }}
-                </Table.Row>
-              )}
-            </Table.Body>
-            <Table.Pagination
-              shadow
-              noMargin
-              align="center"
-              rowsPerPage={10}
-              onPageChange={(page) => console.log({ page })}
-            />
-          </Table> */}
+        <Grid xs={12} justify="center">
+          <Text h1>Company Growths</Text>
         </Grid>
+        {!d ? (
+          <Loading />
+        ) : (
+          d.slice(0, 4).map((x) => (
+            <Grid>
+              <Card key={x.ticker}>
+                <Grid.Container gap={2}>
+                  <Grid>
+                    <Text h3>{x.ticker}</Text>
+                  </Grid>
+                  <Grid xs={12}>{<TagGraph reports={x} />}</Grid>
+                </Grid.Container>
+              </Card>
+            </Grid>
+          ))
+        )}
       </Grid.Container>
     </Container>
   )

@@ -1,10 +1,34 @@
 import { useMemo } from 'react'
-import { Line, LineChart, Tooltip, XAxis, YAxis } from 'recharts'
+import {
+  CartesianGrid,
+  Label,
+  Legend,
+  Line,
+  LineChart,
+  Tooltip,
+  XAxis,
+  YAxis,
+} from 'recharts'
 import { EarningsMetric } from '../interfaces'
 import stringToColor from 'string-to-color'
+import { currencyFormatter } from '../utils'
+
+import { scaleLog } from 'd3-scale'
+const scale = scaleLog().base(10)
 
 interface Props {
   reports: EarningsMetric
+}
+
+const labelFormatter = (v: number) => {
+  const value = v.toString()
+  return `${value.slice(0, 4)}Q${value.charAt(4)}`
+}
+
+const priceFormatter = (v) => {
+  return currencyFormatter('USD')
+    .format(v / 100000)
+    .slice(0, -3)
 }
 
 export const TagGraph = ({ reports }: Props) => {
@@ -35,8 +59,15 @@ export const TagGraph = ({ reports }: Props) => {
       .sort((a, b) => a.name - b.name)
   }, [reports])
 
+  console.log(data)
+
   return (
-    <LineChart width={1200} height={500} data={data}>
+    <LineChart
+      width={1200}
+      height={750}
+      data={data}
+      margin={{ top: 20, right: 5, bottom: 50, left: 50 }}
+    >
       {Object.keys(reports.metrics).map((x) => (
         <>
           <Line
@@ -45,11 +76,33 @@ export const TagGraph = ({ reports }: Props) => {
             stroke={stringToColor(x)}
             connectNulls
           />
-          <Tooltip />
         </>
       ))}
-      <XAxis dataKey={'name'} />
-      <YAxis />
+      <Tooltip
+        itemStyle={{ height: '1px' }}
+        labelFormatter={labelFormatter}
+        formatter={priceFormatter}
+        offset={50}
+        position={{ x: 0, y: -50 }}
+        allowEscapeViewBox={{ y: true }}
+      />
+      <XAxis dataKey={'name'} tickFormatter={labelFormatter}>
+        <Label position="insideBottom" offset={-30}>
+          Year and Quarter
+        </Label>
+      </XAxis>
+      <YAxis
+        scale={'sqrt'}
+        label={{
+          value: '$ / 100,000',
+          angle: -90,
+          position: 'insideLeft',
+          offset: -30,
+        }}
+        //interval={0}
+        tickFormatter={priceFormatter}
+      />
+      <CartesianGrid stroke="#ccc" strokeDasharray="5 5" />
     </LineChart>
   )
 }

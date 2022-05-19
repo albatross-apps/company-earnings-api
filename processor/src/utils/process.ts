@@ -62,7 +62,7 @@ export const getCompaniesPercentGrowthEveryQuarter = (earnings: Earnings[]) => {
           sortReports(data.units.USD, 'end'),
           (report) => report.fy + report.fp
         )
-        const samePeriodReports = getReportsByPeriod(uniqueSortedReports, 'Q1')
+        const samePeriodReports = getReportsByPeriod(uniqueSortedReports)
         return calculateGrowthPercentPerQuarter(tag, samePeriodReports)
       })
       .filter((x) => x) as {
