@@ -82,7 +82,7 @@ const IndexPage = () => {
         {!d ? (
           <Loading />
         ) : (
-          d.slice(0, 4).map((x) => (
+          d.slice(0, 10).map((x) => (
             <Grid>
               <Card key={x.ticker}>
                 <Grid.Container gap={2}>
