@@ -9,7 +9,9 @@ import {
   useAsyncList,
   useCollator,
 } from '@nextui-org/react'
-import { objArrToObj, toPercentFormat } from '../utils'
+import { currencyFormatter, objArrToObj, toPercentFormat } from '../utils'
+import { TagGraph } from '../components/TagGraph'
+import { useEffect, useMemo, useState } from 'react'
 
 const IndexPage = () => {
   const load = async ({ signal }) => {
@@ -47,12 +49,21 @@ const IndexPage = () => {
     }
   }
 
-  // const { data, error } = useSWR('/api/scores', fetcher)
-
   const list = useAsyncList({ load, sort })
 
-  if (list.isLoading) return <Loading type="points" />
-  console.log({ list: list.items })
+  const [d, setD] = useState<EarningsMetric[]>()
+
+  const getData = async () => {
+    const resp = await fetch('/api/scores')
+    return (await resp.json()) as EarningsMetric[]
+  }
+
+  useEffect(() => {
+    ;(async () => {
+      const r = await getData()
+      setD(r)
+    })()
+  }, [])
 
   const columns = list.items?.length
     ? Object.keys(list.items[0]).map((item) => ({
@@ -60,11 +71,13 @@ const IndexPage = () => {
       }))
     : [{ key: 'none' }]
 
+  if (list.isLoading) return <Loading type="points" />
   return (
     <Container fluid>
       <Grid.Container gap={2} justify="center">
+        {d && <TagGraph reports={d[0]} />}
         <Grid xs>
-          <Table
+          {/* <Table
             css={{ minWidth: '100%', height: 'auto' }}
             sortDescriptor={list.sortDescriptor}
             onSortChange={list.sort}
@@ -99,7 +112,7 @@ const IndexPage = () => {
               rowsPerPage={10}
               onPageChange={(page) => console.log({ page })}
             />
-          </Table>
+          </Table> */}
         </Grid>
       </Grid.Container>
     </Container>
