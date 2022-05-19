@@ -1,8 +1,6 @@
-import { Container } from '@nextui-org/react'
 import { useMemo } from 'react'
 import { Line, LineChart, Tooltip, XAxis, YAxis } from 'recharts'
-import { EarningsMetric, ReportPretty } from '../interfaces'
-import { currencyFormatter, objArrToObj } from '../utils'
+import { EarningsMetric } from '../interfaces'
 import stringToColor from 'string-to-color'
 
 interface Props {
@@ -15,7 +13,7 @@ export const TagGraph = ({ reports }: Props) => {
       ([tag, reports]) => {
         return reports.map((x) => {
           return {
-            name: `${x.fp}-${x.fy}`,
+            name: Number(`${x.fy}${x.fp.charAt(1)}`),
             [tag]: x.val,
           }
         })
@@ -31,7 +29,7 @@ export const TagGraph = ({ reports }: Props) => {
           [Object.keys(curr)[1]]: curr[Object.keys(curr)[1]],
         })
       }
-      return x
+      return prev
     }, [])
   }, [reports])
 
@@ -40,9 +38,7 @@ export const TagGraph = ({ reports }: Props) => {
   return (
     <LineChart width={1200} height={500} data={data}>
       {Object.keys(reports.metrics).map((x) => (
-        <>
-          <Line type="monotone" dataKey={x} stroke={stringToColor(x)} />
-        </>
+        <Line type="monotone" dataKey={x} stroke={stringToColor(x)} />
       ))}
       <XAxis dataKey={'name'} />
       <YAxis />
