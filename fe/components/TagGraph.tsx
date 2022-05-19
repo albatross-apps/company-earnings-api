@@ -19,30 +19,37 @@ export const TagGraph = ({ reports }: Props) => {
         })
       }
     )
-    return allData.reduce((prev, curr) => {
-      const x = prev.find((x) => x.name === curr.name)
-      if (x) {
-        x[Object.keys(curr)[1]] = curr[Object.keys(curr)[1]]
-      } else {
-        prev.push({
-          name: curr.name,
-          [Object.keys(curr)[1]]: curr[Object.keys(curr)[1]],
-        })
-      }
-      return prev
-    }, [])
+    return allData
+      .reduce((prev, curr) => {
+        const x = prev.find((x) => x.name === curr.name)
+        if (x) {
+          x[Object.keys(curr)[1]] = curr[Object.keys(curr)[1]]
+        } else {
+          prev.push({
+            name: curr.name,
+            [Object.keys(curr)[1]]: curr[Object.keys(curr)[1]],
+          })
+        }
+        return prev
+      }, [])
+      .sort((a, b) => a.name - b.name)
   }, [reports])
-
-  console.log({ idk: data })
 
   return (
     <LineChart width={1200} height={500} data={data}>
       {Object.keys(reports.metrics).map((x) => (
-        <Line type="monotone" dataKey={x} stroke={stringToColor(x)} />
+        <>
+          <Line
+            type="monotone"
+            dataKey={x}
+            stroke={stringToColor(x)}
+            connectNulls
+          />
+          <Tooltip />
+        </>
       ))}
       <XAxis dataKey={'name'} />
       <YAxis />
-      <Tooltip />
     </LineChart>
   )
 }
